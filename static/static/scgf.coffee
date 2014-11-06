@@ -402,6 +402,9 @@ angular.module 'scgf', ['ngAnimate']
 			session = window.session
 			if session.room isnt parent.room then parent.onJoin()
 			session.act 'room', parent.room, parent.user
+
+		eventBus.on 'init', ->
+			parent.onJoin()
 		]
 	.animation '.cardframe', ->
 		enter: (dom, done)->
@@ -596,6 +599,10 @@ class Session
 		@primus = new Primus()
 		@primus.on 'open', =>
 			$.jGrowl '服务器已连接。'
+			eventBus.fire 'init'
+			eventBus.fire 'snapshot', 
+				layout: [[],[],[],[]]
+				view: []
 			@primus.write
 				action : 'room'
 				to : @room

@@ -242,7 +242,7 @@ games = {}
 			hasController = true
 			break
 	wasCandidate = true 
-	wasCandidate = false if player.control_group isnt 'candidate'
+	wasCandidate = false if player.control_group is 'watcher'
 	wasCandidate = false if player.avatar isnt avatar
 
 	# before game starts : cannot select assigned avatar
@@ -252,14 +252,10 @@ games = {}
 		return if running and not wasCandidate
 
 	if group is 'candidate'
-		return if running
+		return if running and not wasCandidate
 
 	# in game : cannot select Candidate
 	# only Candidate can be Controller if there isn't one
-
-	if group is 'controller' and running
-		return if not _.isEmpty players.by_avatar[avatar]
-
 
 	games[room].assignAvatarAs(player, avatar, group)
 
@@ -269,7 +265,11 @@ games = {}
 @play = (room, sparkid, action, ids)->
 	return if not games[room]
 	g = games[room]
-	return if g.players.getGroup(sparkid) isnt 'controller'
+	role = g.players.getGroup(sparkid)
+	return if role is 'watcher'
+	if role is 'candidate'
+		for i,p of g.players.by_avatar[g.players.getAvatar sparkid]
+			return if p.control_group is 'controller'
 	root = g.game.root
 	avatar = g.avatarEntity g.players.getAvatar sparkid
 
