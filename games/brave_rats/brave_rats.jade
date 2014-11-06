@@ -1,0 +1,106 @@
+asset
+	text
+		desc.
+			游戏由两人对战展开，每人以8张相同手牌开始游戏。
+			每张牌以0-7编号，每轮两人同时打出一张牌，
+			点数大者赢得该轮并获得一分。
+			首先获得4分，或者双方手牌耗尽时分数高者胜。
+			另外，每张牌都有特殊效果，会影响胜负。
+		cover_img http://www.ludikbazar.com/product_thumb/w/190/h/189/img/JDS%20-%20BLUE%20OARANGE%20-%20BRAVE%20RATS.JPG
+		avatar
+			red 红方
+			blue 蓝方
+		card
+			name
+				Musician 乐师
+				Princess 公主
+				Spy	间谍
+				Assassin 刺客
+				Ambassador 大使
+				Wizard 巫师
+				General 将军
+				Prince 王子
+			desc
+				Musician 本轮不计分。对巫师无效。
+				Princess 若对手本轮打出王子，你赢得本局游戏。
+				Spy 下轮对手先出牌。
+				Assassin 本轮点数小的牌赢。对王子和巫师无效。
+				Ambassador 本轮若你赢，额外获得1分。
+				Wizard 乐师、大使、王子和刺客的效果无效。
+				General 下轮你的牌点数+2.
+				Prince 本轮你必胜。但若对手本轮打出公主，你输掉本局游戏。
+		cardarea
+			current 本轮
+			prev 上轮
+			discard 已打出
+		playtip
+			play
+				play 打出
+			hint
+				play 从手牌中选择一张牌并打出它。
+		logs
+			label
+				played {{card}}
+				score 得分
+				win_round {{player}}赢
+				win_game {{player}}获胜
+				tie_game 平局
+				musician 乐师
+				princess 公主
+				spy 间谍
+				assassin 刺客
+				ambassador 大使
+				general 将军
+				prince 王子
+			text
+				played {{player}}打出了{{card}}。
+				score 当前分数：{{1}} 比 {{2}}.
+				win_round {{player}}赢得本轮胜利！
+				win_game {{player}}赢得了游戏！
+				tie_game 本局游戏双方分数相同！
+				musician 乐师令本轮不算分！
+				princess 世界第一的公主殿下！
+				spy {{player}}必须先出牌。
+				assassin 刺客令本轮点数小的牌获胜！
+				ambassador {{player}}额外赢得1分！
+				general {{card}}的点数+2！
+				prince {{card}}所向披靡！
+	js
+		play
+			:coffee
+				return (access, selected, toselect)->
+					if toselect
+						return false if selected.length > 0
+						return false if toselect.template isnt 'card'
+						return false if toselect.place isnt 'bottom.hand'
+						return true
+					else
+						return selected.length == 1
+	templates
+		log_entry
+			.ui.label(class="{{clazz}}",title="{{hint}}"){{label}}
+		card
+			.card(title="{{card.hint}}")
+				p {{card.name}}
+				h4 {{card.level}}
+		player
+			.card
+				p {{card.name}}
+				p {{card.score}}分
+				p {{card.hand}}张牌
+
+	style.
+		.card{
+			border-radius: 6px;
+			color: white;
+		}
+		.card>p{
+			margin-top: 8px;
+			font-family: "Times New Roman";
+		}
+		.card>h4{
+			font-weight: bold;
+			font-size: 36px;
+			font-family: "CharlemagneStd-Bold";
+			margin: 0px;
+		}

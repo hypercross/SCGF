@@ -1,0 +1,186 @@
+asset
+	text
+		desc.
+			4人UNO游戏。。
+		cover_img http://thumbnail.image.rakuten.co.jp/@0_mall/houjou-kyouzai/cabinet/reku/uno1.jpg?_ex=90x90
+		option
+			playercount 玩家数
+		avatar
+			Alfred 玩家A
+			Benedict 玩家B
+			Carl 木是一
+			David 玩家D
+			Eugene 玩家E
+			Finch 玩家F
+		color
+			red red
+			blue blue
+			yellow yellow
+			green green
+			wild wild
+		card
+			name
+				Reverse reverse
+				DrawTwo drawtwo
+				Skip skip
+				Wild wild
+				WildFour wildfour
+			desc
+				Number 接数字或者颜色。
+				Reverse 行动顺序反转。
+				DrawTwo 下一名玩家摸两张牌并跳过回合。
+				Skip 下一名玩家跳过回合。
+				Wild 这张牌可以接任何颜色/符号的牌。
+				WildFour 下一名玩家摸四张牌并跳过回合。仅当你没有要求颜色的牌时才能使用。
+		cardarea
+			draw 牌堆
+		playtip
+			play
+				as_yellow 接黄色
+				as_blue 接蓝色
+				as_red 接红色
+				as_green 接绿色
+				as_yellow_empty 接黄色
+				as_blue_empty 接蓝色
+				as_red_empty 接红色
+				as_green_empty 接绿色
+				draw 摸牌
+				keep 保留
+			hint
+				as_yellow 打出选中的牌，下一名玩家需要接黄色。
+				as_blue 打出选中的牌，下一名玩家需要接蓝色。
+				as_red 打出选中的牌，下一名玩家需要接红色。
+				as_green 打出选中的牌，下一名玩家需要接绿色。
+				as_yellow_empty 打出刚摸到的牌，下一名玩家需要接黄色。
+				as_blue_empty 打出刚摸到的牌，下一名玩家需要接蓝色。
+				as_red_empty 打出刚摸到的牌，下一名玩家需要接红色。
+				as_green_empty 打出刚摸到的牌，下一名玩家需要接绿色。
+				draw 摸一张牌。如果摸到的牌可以使用，你可以立即使用它。
+				keep 保留摸到的牌。
+		logs
+			label
+				played {{card}}
+			text
+				played {{player}}打出了{{card}}。
+	js
+		draw
+			:coffee
+				return (access, selected, toselect)->
+					return false if selected.length>0 or toselect
+					return true
+		keep
+			:coffee
+				return fn.DRAW
+		uno_matcher
+			:coffee
+				return (color)->(access, selected, toselect)->
+
+					hasColor = (match)->
+						for card in access.bottom.hand
+							return true if card.color is match
+						return false
+
+					draw = access.front.draw[0]
+					current_color = draw.color
+					current_name = draw.symbol
+
+					if toselect
+						# playing a card from hand
+						return false if selected.length > 0
+						return false if toselect.template isnt 'front_card'
+						return false if toselect.place isnt 'bottom.hand'
+
+						# playing a matching card
+						if toselect.color isnt 'wild'
+							return false if toselect.color isnt current_color and 
+								toselect.name isnt current_name
+						else if toselect.name is 'wildfour'
+							return false if hasColor current_color
+
+						return true
+					else
+						return false if selected.length != 1
+						# declaring valid color	
+						played = selected[0]
+						return true if current_color == 'wild'
+						return true if played.color == 'wild'
+						return true if played.color is color
+						return false
+
+		as_yellow
+			:coffee
+				return fn.UNO_MATCHER('yellow')
+		as_blue
+			:coffee
+				return fn.UNO_MATCHER('blue')
+		as_red
+			:coffee
+				return fn.UNO_MATCHER('red')
+		as_green
+			:coffee
+				return fn.UNO_MATCHER('green')
+		match_last
+			:coffee
+				return (color)->(access, selected, toselect)->
+					return false if not fn.DRAW(access,selected,toselect)
+					card = access.bottom.hand.last
+					matcher = fn.UNO_MATCHER(color)
+					return false if not matcher(access, selected, card)
+					return false if not matcher(access, [card], null)
+					return true
+		as_yellow_empty
+			:coffee
+				return fn.MATCH_LAST('yellow')
+		as_blue_empty
+			:coffee
+				return fn.MATCH_LAST('blue')
+		as_red_empty
+			:coffee
+				return fn.MATCH_LAST('red')
+		as_green_empty
+			:coffee
+				return fn.MATCH_LAST('green')
+
+	templates
+		log_entry
+			.ui.label(class="{{clazz}}",title="{{hint}}"){{label}}
+		front_card
+			img.uno.card(ng-src="uno/img/{{card.color}}_{{card.name}}.png")
+		cover_card
+			img.uno.card(ng-src="uno/img/cover.jpg")
+		player
+			.card
+				p {{card.name}}
+				p {{card.hand}}张牌
+		deck
+			img.uno.card(ng-src="uno/img/{{card.color}}_{{card.symbol}}.png")
+			.uno.card
+				p 牌堆<br>{{card.draw}}
+				p 弃牌<br>{{card.discard}}
+
+	style.
+		.card>p{
+			font-family: "Times New Roman";
+		}
+		.card>h4{
+			font-weight: bold;
+			font-size: 36px;
+			font-family: "CharlemagneStd-Bold";
+			margin: 0px;
+		}
+		.uno.card{
+			display: inline-block;
+			border-radius: 12px;
+		}
+		.cardframe:not(.disabled)>.uno.card{
+			box-shadow: 
+				0px 0px 16px #17BE00,
+				0px 0px 16px #17BE00;
+		}
+		.cardframe.chosen>.uno.card{
+			-webkit-transform:scale(1.1);
+			-moz-transform:scale(1.1);
+			-ms-transform:scale(1.1);
+			-o-transform:scale(1.1);
+			transform:scale(1.1);
+		}

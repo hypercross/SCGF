@@ -1,0 +1,7 @@
+static/index.html
+static/static/*.css
+static/static/*.js
+static/static/min/*.js
+games/*/*.js
+games/*/min/*.js
+npm-debug.log

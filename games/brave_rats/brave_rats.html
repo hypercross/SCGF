@@ -1,0 +1,139 @@
+
+<asset>
+  <text>
+    <desc>
+      游戏由两人对战展开，每人以8张相同手牌开始游戏。
+      每张牌以0-7编号，每轮两人同时打出一张牌，
+      点数大者赢得该轮并获得一分。
+      首先获得4分，或者双方手牌耗尽时分数高者胜。
+      另外，每张牌都有特殊效果，会影响胜负。
+    </desc>
+    <cover_img>http://www.ludikbazar.com/product_thumb/w/190/h/189/img/JDS%20-%20BLUE%20OARANGE%20-%20BRAVE%20RATS.JPG</cover_img>
+    <avatar>
+      <red>红方</red>
+      <blue>蓝方</blue>
+    </avatar>
+    <card>
+      <name>
+        <Musician>乐师</Musician>
+        <Princess>公主</Princess>
+        <Spy>	间谍</Spy>
+        <Assassin>刺客</Assassin>
+        <Ambassador>大使</Ambassador>
+        <Wizard>巫师</Wizard>
+        <General>将军</General>
+        <Prince>王子</Prince>
+      </name>
+      <desc>
+        <Musician>本轮不计分。对巫师无效。</Musician>
+        <Princess>若对手本轮打出王子，你赢得本局游戏。</Princess>
+        <Spy>下轮对手先出牌。</Spy>
+        <Assassin>本轮点数小的牌赢。对王子和巫师无效。</Assassin>
+        <Ambassador>本轮若你赢，额外获得1分。</Ambassador>
+        <Wizard>乐师、大使、王子和刺客的效果无效。</Wizard>
+        <General>下轮你的牌点数+2.</General>
+        <Prince>本轮你必胜。但若对手本轮打出公主，你输掉本局游戏。</Prince>
+      </desc>
+    </card>
+    <cardarea>
+      <current>本轮</current>
+      <prev>上轮</prev>
+      <discard>已打出</discard>
+    </cardarea>
+    <playtip>
+      <play>
+        <play>打出</play>
+      </play>
+      <hint>
+        <play>从手牌中选择一张牌并打出它。</play>
+      </hint>
+    </playtip>
+    <logs>
+      <label>
+        <played>{{card}}</played>
+        <score>得分</score>
+        <win_round>{{player}}赢</win_round>
+        <win_game>{{player}}获胜</win_game>
+        <tie_game>平局</tie_game>
+        <musician>乐师</musician>
+        <princess>公主</princess>
+        <spy>间谍</spy>
+        <assassin>刺客</assassin>
+        <ambassador>大使</ambassador>
+        <general>将军</general>
+        <prince>王子</prince>
+      </label>
+      <text>
+        <played>{{player}}打出了{{card}}。</played>
+        <score>当前分数：{{1}} 比 {{2}}.</score>
+        <win_round>{{player}}赢得本轮胜利！</win_round>
+        <win_game>{{player}}赢得了游戏！</win_game>
+        <tie_game>本局游戏双方分数相同！</tie_game>
+        <musician>乐师令本轮不算分！</musician>
+        <princess>世界第一的公主殿下！</princess>
+        <spy>{{player}}必须先出牌。</spy>
+        <assassin>刺客令本轮点数小的牌获胜！</assassin>
+        <ambassador>{{player}}额外赢得1分！</ambassador>
+        <general>{{card}}的点数+2！</general>
+        <prince>{{card}}所向披靡！</prince>
+      </text>
+    </logs>
+  </text>
+  <js>
+    <play>(function() {
+  return function(access, selected, toselect) {
+    if (toselect) {
+      if (selected.length > 0) {
+        return false;
+      }
+      if (toselect.template !== 'card') {
+        return false;
+      }
+      if (toselect.place !== 'bottom.hand') {
+        return false;
+      }
+      return true;
+    } else {
+      return selected.length === 1;
+    }
+  };
+
+}).call(this);
+
+    </play>
+  </js>
+  <templates>
+    <log_entry>
+      <div title="{{hint}}" class="ui label {{clazz}}">{{label}}</div>
+    </log_entry>
+    <card>
+      <div title="{{card.hint}}" class="card">
+        <p>{{card.name}}</p>
+        <h4>{{card.level}}</h4>
+      </div>
+    </card>
+    <player>
+      <div class="card">
+        <p>{{card.name}}</p>
+        <p>{{card.score}}分</p>
+        <p>{{card.hand}}张牌</p>
+      </div>
+    </player>
+  </templates>
+  <style>
+    .card{
+     border-radius: 6px;
+     color: white;
+    }
+    .card>p{
+     margin-top: 8px;
+     font-family: "Times New Roman";
+    }
+    .card>h4{
+     font-weight: bold;
+     font-size: 36px;
+     font-family: "CharlemagneStd-Bold";
+     margin: 0px;
+    }
+  </style>
+</asset>

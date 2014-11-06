@@ -1,0 +1,177 @@
+@import "compass/css3"
+@import "compass/css3/user-interface"
+@import "compass/css3/box-shadow"
+@import "compass/css3/transform"
+
+html, body
+	+user-select(none)
+	height: 100%
+	margin: 0px
+	background-color: #eee
+
+.absolute
+	position: absolute
+
+.relative
+	position: relative
+
+.backfill
+	top: 0px
+	bottom: 0px
+	left: 0px
+	right: 0px
+	padding: 6px
+	border-radius: 6px
+	padding-top: 126px
+	text-align: center
+	color: gray
+	+box-shadow(inset 0px 0px 6px #888)
+	background-color: #eee
+
+.highlight
+	+transition-property(background-color)
+	+transition-duration(0.2s)
+.highlight:hover
+	background-color: #eee
+
+.ui.panel
+	background-color: white
+	border-radius: 4px
+	+box-shadow(0px 0px 4px #888)
+.ui.paper
+	background-color: white
+	border-radius: 0
+	+box-shadow(2px 2px 6px #888)
+.ui.deep.paper
+	+box-shadow(3px 3px 8px #888)
+
+// components
+.ui.modal#login
+	width: auto
+	margin-left: auto
+	top: 220px
+	right: 40px
+	left: auto
+.ui.modal#result
+	text-align: center
+.ui.top.fixed.menu
+	+box-shadow(0px 0px 10px #888)
+.ui.left.sidebar
+	text-align: center
+	.ui.teal.list
+		text-align: left
+.ui.bottom.sidebar.active
+	overflow-y: visible
+.ui.bottom.sidebar
+	padding: 0
+.ui.hover.message
+	+user-select(all)
+	position: absolute
+	overflow: auto
+	top: -216px
+	height: 200px
+	right: 40px
+	left: 40px
+.game_cover
+	height: 5em
+
+#container
+	bottom: 20px
+	top: 60px
+	left: 20px
+	right: 240px
+	position: absolute
+
+#info
+	bottom: 20px
+	top: 60px
+	width: 200px
+	right: 20px
+	position: absolute
+	.upper
+		top: 0
+	.lower
+		bottom: 0
+	.upper,.lower
+		position: absolute
+		height: 50%
+		left: 0
+		right: 0
+		.ui.list, .ui.logs
+			position: absolute
+			left: 10px
+			right: 10px
+			overflow-y: auto
+			top: 20px
+			bottom: 10px
+		.ui.logs
+			margin-top: 1em
+		.ui.logs .item
+			display: inline-block
+			vertical-align: bottom
+
+.game.controls
+	text-align: center
+	height: 37px
+	white-space: nowrap
+
+.subarea
+	height: 100%
+	min-width: 80px
+	display: inline-block
+	vertical-align: bottom
+	border-color: #666
+	margin-left: 5px
+	margin-right: 5px
+
+.cardarea
+	height: 150px
+	margin: 15px
+	text-align: center
+	white-space: nowrap
+
+.cardarea.short
+	height: 120px
+	.backfill
+		padding-top: 90px
+
+.cardframe
+	display: inline-block
+	vertical-align: bottom
+	height: 100%
+	overflow: visible
+	color: white
+	position: relative
+	z-index: 1
+
+.card
+	cursor: default
+	display: block
+	margin: 5px 5px
+	width: 70px
+	height: 110px
+	overflow: hidden
+	+box-shadow(2px 2px 5px #888)
+	background-color: #555
+	text-align: center
+
+.projectile
+	position: absolute
+	top : 0px
+	left : 0px
+
+div.jGrowl div.jGrowl-notification
+	min-height: 0px
+	+transition(height 0.3s)
+
+.cardframe>.card
+	-webkit-transition: -webkit-transform  0.3s ease-in-out
+	-moz-transition:    -moz-transform     0.3s ease-in-out
+	-o-transition:      -o-transform       0.3s ease-in-out
+	transition:         transform          0.3s ease-in-out
+
+.cardframe:not(.disabled)>.card
+	+box-shadow(0px 0px 16px #17BE00, 0px 0px 16px #17BE00)
+
+.cardframe.chosen>.card
+	+transform(scale(1.1))

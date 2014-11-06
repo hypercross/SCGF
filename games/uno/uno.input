@@ -1,0 +1,8 @@
+setup
+start
+watch .Adam
+act .Adam ready
+act .Ben ready
+act .Carl ready
+act .David ready
+resume

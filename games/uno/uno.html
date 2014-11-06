@@ -1,0 +1,274 @@
+
+<asset>
+  <text>
+    <desc>4人UNO游戏。。</desc>
+    <cover_img>http://thumbnail.image.rakuten.co.jp/@0_mall/houjou-kyouzai/cabinet/reku/uno1.jpg?_ex=90x90</cover_img>
+    <option>
+      <playercount>玩家数</playercount>
+    </option>
+    <avatar>
+      <Alfred>玩家A</Alfred>
+      <Benedict>玩家B</Benedict>
+      <Carl>木是一</Carl>
+      <David>玩家D</David>
+      <Eugene>玩家E</Eugene>
+      <Finch>玩家F</Finch>
+    </avatar>
+    <color>
+      <red>red</red>
+      <blue>blue</blue>
+      <yellow>yellow</yellow>
+      <green>green</green>
+      <wild>wild</wild>
+    </color>
+    <card>
+      <name>
+        <Reverse>reverse</Reverse>
+        <DrawTwo>drawtwo</DrawTwo>
+        <Skip>skip</Skip>
+        <Wild>wild</Wild>
+        <WildFour>wildfour</WildFour>
+      </name>
+      <desc>
+        <Number>接数字或者颜色。</Number>
+        <Reverse>行动顺序反转。</Reverse>
+        <DrawTwo>下一名玩家摸两张牌并跳过回合。</DrawTwo>
+        <Skip>下一名玩家跳过回合。</Skip>
+        <Wild>这张牌可以接任何颜色/符号的牌。</Wild>
+        <WildFour>下一名玩家摸四张牌并跳过回合。仅当你没有要求颜色的牌时才能使用。</WildFour>
+      </desc>
+    </card>
+    <cardarea>
+      <draw>牌堆</draw>
+    </cardarea>
+    <playtip>
+      <play>
+        <as_yellow>接黄色</as_yellow>
+        <as_blue>接蓝色</as_blue>
+        <as_red>接红色</as_red>
+        <as_green>接绿色</as_green>
+        <as_yellow_empty>接黄色</as_yellow_empty>
+        <as_blue_empty>接蓝色</as_blue_empty>
+        <as_red_empty>接红色</as_red_empty>
+        <as_green_empty>接绿色</as_green_empty>
+        <draw>摸牌</draw>
+        <keep>保留</keep>
+      </play>
+      <hint>
+        <as_yellow>打出选中的牌，下一名玩家需要接黄色。</as_yellow>
+        <as_blue>打出选中的牌，下一名玩家需要接蓝色。</as_blue>
+        <as_red>打出选中的牌，下一名玩家需要接红色。</as_red>
+        <as_green>打出选中的牌，下一名玩家需要接绿色。</as_green>
+        <as_yellow_empty>打出刚摸到的牌，下一名玩家需要接黄色。</as_yellow_empty>
+        <as_blue_empty>打出刚摸到的牌，下一名玩家需要接蓝色。</as_blue_empty>
+        <as_red_empty>打出刚摸到的牌，下一名玩家需要接红色。</as_red_empty>
+        <as_green_empty>打出刚摸到的牌，下一名玩家需要接绿色。</as_green_empty>
+        <draw>摸一张牌。如果摸到的牌可以使用，你可以立即使用它。</draw>
+        <keep>保留摸到的牌。</keep>
+      </hint>
+    </playtip>
+    <logs>
+      <label>
+        <played>{{card}}</played>
+      </label>
+      <text>
+        <played>{{player}}打出了{{card}}。</played>
+      </text>
+    </logs>
+  </text>
+  <js>
+    <draw>(function() {
+  return function(access, selected, toselect) {
+    if (selected.length > 0 || toselect) {
+      return false;
+    }
+    return true;
+  };
+
+}).call(this);
+
+    </draw>
+    <keep>(function() {
+  return fn.DRAW;
+
+}).call(this);
+
+    </keep>
+    <uno_matcher>(function() {
+  return function(color) {
+    return function(access, selected, toselect) {
+      var current_color, current_name, draw, hasColor, played;
+      hasColor = function(match) {
+        var card, _i, _len, _ref;
+        _ref = access.bottom.hand;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          card = _ref[_i];
+          if (card.color === match) {
+            return true;
+          }
+        }
+        return false;
+      };
+      draw = access.front.draw[0];
+      current_color = draw.color;
+      current_name = draw.symbol;
+      if (toselect) {
+        if (selected.length > 0) {
+          return false;
+        }
+        if (toselect.template !== 'front_card') {
+          return false;
+        }
+        if (toselect.place !== 'bottom.hand') {
+          return false;
+        }
+        if (toselect.color !== 'wild') {
+          if (toselect.color !== current_color && toselect.name !== current_name) {
+            return false;
+          }
+        } else if (toselect.name === 'wildfour') {
+          if (hasColor(current_color)) {
+            return false;
+          }
+        }
+        return true;
+      } else {
+        if (selected.length !== 1) {
+          return false;
+        }
+        played = selected[0];
+        if (current_color === 'wild') {
+          return true;
+        }
+        if (played.color === 'wild') {
+          return true;
+        }
+        if (played.color === color) {
+          return true;
+        }
+        return false;
+      }
+    };
+  };
+
+}).call(this);
+
+    </uno_matcher>
+    <as_yellow>(function() {
+  return fn.UNO_MATCHER('yellow');
+
+}).call(this);
+
+    </as_yellow>
+    <as_blue>(function() {
+  return fn.UNO_MATCHER('blue');
+
+}).call(this);
+
+    </as_blue>
+    <as_red>(function() {
+  return fn.UNO_MATCHER('red');
+
+}).call(this);
+
+    </as_red>
+    <as_green>(function() {
+  return fn.UNO_MATCHER('green');
+
+}).call(this);
+
+    </as_green>
+    <match_last>(function() {
+  return function(color) {
+    return function(access, selected, toselect) {
+      var card, matcher;
+      if (!fn.DRAW(access, selected, toselect)) {
+        return false;
+      }
+      card = access.bottom.hand.last;
+      matcher = fn.UNO_MATCHER(color);
+      if (!matcher(access, selected, card)) {
+        return false;
+      }
+      if (!matcher(access, [card], null)) {
+        return false;
+      }
+      return true;
+    };
+  };
+
+}).call(this);
+
+    </match_last>
+    <as_yellow_empty>(function() {
+  return fn.MATCH_LAST('yellow');
+
+}).call(this);
+
+    </as_yellow_empty>
+    <as_blue_empty>(function() {
+  return fn.MATCH_LAST('blue');
+
+}).call(this);
+
+    </as_blue_empty>
+    <as_red_empty>(function() {
+  return fn.MATCH_LAST('red');
+
+}).call(this);
+
+    </as_red_empty>
+    <as_green_empty>(function() {
+  return fn.MATCH_LAST('green');
+
+}).call(this);
+
+    </as_green_empty>
+  </js>
+  <templates>
+    <log_entry>
+      <div title="{{hint}}" class="ui label {{clazz}}">{{label}}</div>
+    </log_entry>
+    <front_card><img ng-src="uno/img/{{card.color}}_{{card.name}}.png" class="uno card"/></front_card>
+    <cover_card><img ng-src="uno/img/cover.jpg" class="uno card"/></cover_card>
+    <player>
+      <div class="card">
+        <p>{{card.name}}</p>
+        <p>{{card.hand}}张牌</p>
+      </div>
+    </player>
+    <deck><img ng-src="uno/img/{{card.color}}_{{card.symbol}}.png" class="uno card"/>
+      <div class="uno card">
+        <p>牌堆<br>{{card.draw}}</p>
+        <p>弃牌<br>{{card.discard}}</p>
+      </div>
+    </deck>
+  </templates>
+  <style>
+    .card>p{
+     font-family: "Times New Roman";
+    }
+    .card>h4{
+     font-weight: bold;
+     font-size: 36px;
+     font-family: "CharlemagneStd-Bold";
+     margin: 0px;
+    }
+    .uno.card{
+     display: inline-block;
+     border-radius: 12px;
+    }
+    .cardframe:not(.disabled)>.uno.card{
+     box-shadow: 
+      0px 0px 16px #17BE00,
+      0px 0px 16px #17BE00;
+    }
+    .cardframe.chosen>.uno.card{
+     -webkit-transform:scale(1.1);
+     -moz-transform:scale(1.1);
+     -ms-transform:scale(1.1);
+     -o-transform:scale(1.1);
+     transform:scale(1.1);
+    }
+  </style>
+</asset>
