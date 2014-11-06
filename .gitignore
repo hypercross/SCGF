@@ -5,3 +5,5 @@ static/static/min/*.js
 games/*/*.js
 games/*/min/*.js
 npm-debug.log
+node_modules/*
+!node_modules/scgf
