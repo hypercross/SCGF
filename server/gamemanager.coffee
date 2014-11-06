@@ -243,4 +243,6 @@ games = {}
 	return if avatar.status != 'playing'
 	entities = (root.select '&' + id for id in ids)
 	avatar.targets[action] = entities
+	avatar.status = 'played'
+	if avatar.Viewable then avatar.Viewable.notify()
 	g.game.resume()

@@ -157,16 +157,17 @@ angular.module 'scgf', ['ngAnimate']
 			$scope.$apply()
 		eventBus.on 'avatar', (data)->
 
-			sanitize = (id,data)->
-				id : id
-				avatar : data.avatar or 'none'
-				role : data.group
-				name : data.name
-				score : data.score
+			sanitize = (obj, id,data)->
+				obj.id = id
+				obj.avatar = data.avatar or 'none'
+				obj.role = data.group
+				obj.name = data.name
+				obj.score = data.score
+				return obj
 
 			patch_list data.patch, 
 				insert : (id, data)->
-					$scope.players.push sanitize id,data
+					$scope.players.push sanitize {},id,data
 					if data.name is $scope.$parent.user
 						$scope.self = $scope.players.last
 					if data.name isnt 'anonymous'
@@ -189,10 +190,10 @@ angular.module 'scgf', ['ngAnimate']
 								if data.name isnt 'anonymous'
 									$.jGrowl data.name + '加入了游戏。'
 							old = $scope.players[key]
-							$scope.players[key] = sanitize id,data
-							$scope.players[key].current_score = data.score - old.score
+							old.current_score = data.score - old.score
+							sanitize old,id,data
 							if data.name is $scope.$parent.user
-								$scope.self = $scope.players[key]
+								$scope.self = old
 							break
 					
 				, data

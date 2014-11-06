@@ -22,7 +22,7 @@ body(ng-app="scgf")
 		a.item(onClick="$('.ui.sidebar#game').sidebar('toggle');") 游戏
 		a.item(onClick="$('.ui.sidebar#room').sidebar('toggle');") 房间
 		a.item(onClick="$('.ui.sidebar#chat').sidebar('toggle');") 聊天
-		//- a.item(onClick="$('.ui.modal#result').modal('show');") 得分
+		a.item(onClick="$('.ui.modal#result').modal('show');") 得分
 		.right.menu
 			a.item(ng-bind-template="{{user}}@{{room}}")
 
