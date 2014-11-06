@@ -14,7 +14,7 @@ class RoomPlayer
 	constructor: (@spark,@room)->
 		@id = @spark.id
 		@avatar = null
-		@control_group = 'candidate'
+		@control_group = 'watcher'
 		@nickname = 'anonymous'
 		@score = 0
 	notify: ->
@@ -136,6 +136,7 @@ class Room
 						vars : vars
 			score : (scores)->
 				for id,each of me.players.by_id
+					continue if each.control_group isnt 'controller'
 					each.score += scores[each.avatar] or 0
 					each.notify()
 			finish : ->
@@ -188,7 +189,7 @@ games = {}
 			name : name
 			game : if room.game then room.game.gamecode else 'No game set'
 			users : _.size room.players.by_id
-			playing : if room.game and room.game.runner then true else false
+			playing : if room.game and room.game.ingame then true else false
 	spark.scgf 'list', result
 
 @enterRoom = (room, spark)->
@@ -230,8 +231,36 @@ games = {}
 	games[room].players.setName spark.id, name
 
 @setAvatar = (room, spark, avatar, group)->
+	game = games[room]
 	players  = games[room].players
 	player = players.by_id[spark.id]
+
+	running = game.game and game.game.ingame
+	hasController = false
+	for id,him of players.by_avatar[avatar]
+		if him.control_group is 'controller'
+			hasController = true
+			break
+	wasCandidate = true 
+	wasCandidate = false if player.control_group isnt 'candidate'
+	wasCandidate = false if player.avatar isnt avatar
+
+	# before game starts : cannot select assigned avatar
+
+	if group is 'controller'
+		return if hasController
+		return if running and not wasCandidate
+
+	if group is 'candidate'
+		return if running
+
+	# in game : cannot select Candidate
+	# only Candidate can be Controller if there isn't one
+
+	if group is 'controller' and running
+		return if not _.isEmpty players.by_avatar[avatar]
+
+
 	games[room].assignAvatarAs(player, avatar, group)
 
 @getName = (room, spark)->
