@@ -69,13 +69,13 @@ class Room
 		@players = new RoomPlayerCatalog(@name)
 
 	assignAvatar: (player,skip)->
-		return if player.avatar
-		return if not @avatar_map
+		return false if player.avatar
+		return false if not @avatar_map
 		for avatar of @avatar_map
 			if _.isEmpty @players.by_avatar[avatar]
 				logger.log 'assigned ' + player.id + ' as ' + avatar
 				@assignAvatarAs player, avatar, 'controller',skip
-				break;
+				return true;
 
 	assignAvatarAs: (player, avatar, group,skip)->
 		player.control_group = group
@@ -206,7 +206,10 @@ games = {}
 		me.id, me.nickname,	me.avatar, me.control_group, me.score
 
 	spark.scgf 'room', games[room].getDesc()
-	games[room].assignAvatar(me)
+	assigned = games[room].assignAvatar(me)
+	if not assigned spark.scgf 'snapshot', 
+		layout: [[],[],[],[]]
+		view : []
 
 @leaveRoom = (room, spark)->
 	the_room = games[room]
