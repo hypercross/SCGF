@@ -269,6 +269,7 @@ games = {}
 @play = (room, sparkid, action, ids)->
 	return if not games[room]
 	g = games[room]
+	return if g.players.getGroup(sparkid) isnt 'controller'
 	root = g.game.root
 	avatar = g.avatarEntity g.players.getAvatar sparkid
 
