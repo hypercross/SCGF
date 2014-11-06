@@ -39,6 +39,7 @@ class BraveRatsPlayer extends Entity.Player
                 asked : if viewpoint == @ then @getAsked() else undefined
                 place : if viewpoint == @ then 'bottom.player' else 'top.player'
                 template : 'player'
+                status : if @getAsked().length then 'playing' else 'ready'
                 name : '@' + @name
                 score : @wins.current
                 hand : @hand.deck.length

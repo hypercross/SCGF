@@ -85,9 +85,13 @@ asset
 				h4 {{card.level}}
 		player
 			.card
-				p {{card.name}}
-				p {{card.score}}分
-				p {{card.hand}}张牌
+				p.short {{card.controller || '没人'}}
+				p.short {{card.name}}
+				.ui.horizontal.fitted.icon.divider
+					i.circular.inverted.icon(ng-class="card.icon")
+				div
+					i.star.icon &nbsp;{{card.score}}&nbsp;
+					i.ticket.icon &nbsp;{{card.hand}}
 
 	style.
 		.card{
@@ -103,4 +107,10 @@ asset
 			font-size: 36px;
 			font-family: "CharlemagneStd-Bold";
 			margin: 0px;
+		}
+		.card .short{
+			margin: 4px;
+		}
+		.divider+div{
+			margin-top: 4px;
 		}

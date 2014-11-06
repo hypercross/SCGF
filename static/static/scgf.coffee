@@ -276,10 +276,23 @@ angular.module 'scgf', ['ngAnimate']
 			return row_obj[col]
 
 		handle_game = (data)->
+
+			if data.template is 'player'
+				if data.status is 'playing'
+					data.icon = 'red loading' 
+				else data.icon = 'green checkmark'
+				for p in $scope.$root.players()
+					continue if p.avatar isnt data.name.slice(1)
+					continue if p.role isnt 'controller'
+					data.controller = p.name
+					break
+
 			id = data.id
 			window.assets.deref data
 			old = $scope.cards_lookup[id] or {}
 			$scope.cards_lookup[id] = data
+
+
 
 			# if data has place
 				# if old has same place -> replace

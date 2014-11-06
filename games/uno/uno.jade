@@ -150,8 +150,12 @@ asset
 			img.uno.card(ng-src="uno/img/cover.jpg")
 		player
 			.card
-				p {{card.name}}
-				p {{card.hand}}张牌
+				p.short {{card.controller || '没人'}}
+				p.short {{card.name}}
+				.ui.horizontal.fitted.icon.divider
+					i.circular.inverted.icon(ng-class="card.icon")
+				div
+					i.ticket.icon &nbsp;{{card.hand}}
 		deck
 			img.uno.card(ng-src="uno/img/{{card.color}}_{{card.symbol}}.png")
 			.uno.card
@@ -183,4 +187,10 @@ asset
 			-ms-transform:scale(1.1);
 			-o-transform:scale(1.1);
 			transform:scale(1.1);
+		}
+		.card .short{
+			margin: 4px;
+		}
+		.divider+div{
+			margin-top: 4px;
 		}

@@ -233,8 +233,10 @@
     <cover_card><img ng-src="uno/img/cover.jpg" class="uno card"/></cover_card>
     <player>
       <div class="card">
-        <p>{{card.name}}</p>
-        <p>{{card.hand}}张牌</p>
+        <p class="short">{{card.controller || '没人'}}</p>
+        <p class="short">{{card.name}}</p>
+        <div class="ui horizontal fitted icon divider"><i ng-class="card.icon" class="circular inverted icon"></i></div>
+        <div><i class="ticket icon">&nbsp;{{card.hand}}</i></div>
       </div>
     </player>
     <deck><img ng-src="uno/img/{{card.color}}_{{card.symbol}}.png" class="uno card"/>
@@ -269,6 +271,12 @@
      -ms-transform:scale(1.1);
      -o-transform:scale(1.1);
      transform:scale(1.1);
+    }
+    .card .short{
+     margin: 4px;
+    }
+    .divider+div{
+     margin-top: 4px;
     }
   </style>
 </asset>
