@@ -707,6 +707,7 @@ class Session
 		if not @joined
 			eventBus.fireAsync 'connected'
 			@joined = true
+			@room = newroom
 			return {
 				to : newroom
 				as : @nickname
@@ -715,12 +716,12 @@ class Session
 			as : @nickname
 		} else
 			eventBus.fireAsync 'connected'
+			@room = newroom
 			return {
 				from : @room
 				to : newroom
 				as : @nickname
 			}
-		@room = newroom
 		@saveCache @nickname, @room
 
 	action_avatar: (avatar, group)->
