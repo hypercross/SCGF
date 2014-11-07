@@ -333,7 +333,7 @@ eventBus.on 'room', 'gameController', (data)->
 				break
 		assets.onloaded ->
 			@scope.gameCover = assets.text 'cover_img'
-			@scope.game_description = assets.text '>desc'
+			@scope.gameDesc = assets.text '>desc'
 			@scope.$apply()
 		$.jGrowl '当前游戏：' + data.manifest
 	if data.config

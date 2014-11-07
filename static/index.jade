@@ -17,14 +17,14 @@ head
 	script(src="/static/scgf.js")
 body(ng-app="scgf",ng-controller="scgfController")
 	//- 顶栏
-	.ui.top.inverted.teal.fixed.menu.active(ng-controller="sessionController")
+	.ui.top.inverted.teal.fixed.menu.active
 		.header.item SCGF
 		a.item(onClick="$('.ui.sidebar#game').sidebar('toggle');") 游戏
 		a.item(onClick="$('.ui.sidebar#room').sidebar('toggle');") 房间
 		a.item(onClick="$('.ui.sidebar#chat').sidebar('toggle');") 聊天
 		a.item(onClick="$('.ui.modal#result').modal('show');") 得分
 		.right.menu
-			a.item(ng-bind-template="{{user}}@{{room}}")
+			a.item(ng-bind-template="{{session.user}}@{{session.room}}")
 
 		.ui.modal#login
 			i.close.icon
@@ -33,19 +33,19 @@ body(ng-app="scgf",ng-controller="scgfController")
 				.field 
 					.ui.header 昵称
 					.ui.left.icon.input
-						input(type="text",placeholder="昵称",ng-model="user")
+						input(type="text",placeholder="昵称",ng-model="session.user")
 						i.user.icon
 				.field
 					.ui.list
-						.item(ng-repeat="one in roomlist()")
-							a.ui.label(ng-click="$root.room = one.name",
-							ng-class="{'teal': one.name == $root.room}")
+						.item(ng-repeat="one in roomlist")
+							a.ui.label(ng-click="session.room = one.name",
+							ng-class="{'teal': one.name == session.room}")
 								.header {{one.name}} - {{one.users}}玩家
 								.sub.header {{one.game}} - {{one.playing ? '游戏中' : '准备中'}}
 
 				.field 
 					.ui.left.icon.input 
-						input(type="text",placeholder="房间名",ng-model="room")
+						input(type="text",placeholder="房间名",ng-model="session.room")
 						i.home.icon
 				.field
 					.ui.header 选择房间或输入新房间名
@@ -56,15 +56,15 @@ body(ng-app="scgf",ng-controller="scgfController")
 		.ui.inverted.teal.header 游戏
 
 		.ui.horizontal.divider 当前
-		div(ng-if="!game_cover")
+		div(ng-if="!gameCover")
 			p 没有游戏
-		img.game_cover(ng-src="{{game_cover}}",
-			ng-if="game_cover",
-			title="{{game_description}}")
+		img.game_cover(ng-src="{{gameCover}}",
+			ng-if="gameCover",
+			title="{{gameDesc}}")
 
 		.ui.horizontal.divider 列表
 		.ui.list
-			a.highlight.item(ng-repeat="agame in game_list" ng-click="select(agame)")
+			a.highlight.item(ng-repeat="agame in gamelist" ng-click="select(agame)")
 				i.absolute.black.circle.blank.icon(ng-if="agame == current")
 				i.absolute.teal.circle.icon(ng-if="agame == selected")
 				.header(ng-bind-template="{{agame}}")
@@ -99,7 +99,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 				ng-class="{'active': self.role == 'watcher'}") 观战
 		.ui.list
 			a.highlight.item(ng-repeat="avatar in avatars",
-					ng-click="select_avatar(avatar)")
+					ng-click="selectAvatar(avatar)")
 				i.absolute.teal.circle.icon(ng-if="avatar == self.avatar")
 				.header(ng-bind-template="{{'avatar>' + avatar | lookup}}")
 	//- 得分
@@ -114,7 +114,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 					td 本局
 					td 累计
 			tbody
-				tr(ng-repeat="player in players()")
+				tr(ng-repeat="player in players")
 					td {{player.name}}
 					td {{player.role | lookup}}, {{'avatar>' + player.avatar | lookup}}
 					td
@@ -157,7 +157,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 		.upper
 			.ui.horizontal.divider 玩家
 			.ui.teal.list
-				.tiny.item(ng-repeat="player in players()")
+				.tiny.item(ng-repeat="player in players")
 					.ui.purple.label
 						i.white.star.icon	{{player.score}}
 					.content
@@ -167,7 +167,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 			.ui.horizontal.divider 日志
 			.ui.logs
 				div(ng-bind-html="line",
-					ng-repeat="line in logs() track by $index",
+					ng-repeat="line in logs track by $index",
 					ng-class="{'item': line != '' , 'ui divider': line == ''}")
 
 	//- 自动隐藏侧栏
