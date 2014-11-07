@@ -715,10 +715,11 @@ class Session
 		else if newroom is @room then return {
 			as : @nickname
 		} else
-			eventBus.fireAsync 'connected'
+			oldroom = @room
 			@room = newroom
+			eventBus.fireAsync 'connected'
 			return {
-				from : @room
+				from : oldroom
 				to : newroom
 				as : @nickname
 			}
