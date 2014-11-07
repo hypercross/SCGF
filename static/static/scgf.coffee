@@ -52,7 +52,6 @@ assignPlace = (place)->
 	return true
 
 fireProjectile = (projectile, from, to)->
-	console.log projectile
 	return if not from.length or not to.length
 	projectile.addClass 'absolute'
 	projectile.css 
@@ -92,6 +91,10 @@ class EventBus
 			for func in (@[name][scope] or [])
 				func.call(@scopes[scope], data)
 		return
+	fireAsync : (name, data)->
+		setTimeout =>
+			@fire(name, data)
+		, 1
 
 eventBus = new EventBus()
 window.eventBus = eventBus
@@ -326,7 +329,7 @@ eventBus.on 'list','scgfController', (data)->
 eventBus.on 'room', 'gameController', (data)->
 	assets = window.assets
 	if data.asset
-		console.log 'load ' + data.asset
+		console.log 'loading ' + data.asset
 		assets.load data.asset, @templateCache
 	if data.manifest
 		@scope.current = data.manifest
@@ -399,12 +402,10 @@ eventBus.on 'avatar', 'roomController', (data)->
 	return if op is 'd' and @scope.self.id isnt data.patch.slice(1)
 	return if data.name and data.name isnt @scope.session.user
 
-	console.log 'self modified...'
 	@scope.self = {}
 	for one in @scope.players
 		if one.name is data.name
 			@scope.self = one
-			console.log 'self is ', one
 			@scope.$apply()
 			return
 
@@ -505,7 +506,6 @@ scgf.animation '.cardframe', ->
 	leave: (dom,done)->
 		dom.find('[title]').popup 'remove'
 		card = dom.scope().card
-		console.log card
 		if card.to and not assignPlace(card.to)
 			to = card.to.slice(1)
 			tgt = $('.cardframe.'+to)
@@ -619,7 +619,6 @@ class Assets
 						html = each.innerHTML
 						$templateCache.put name, html
 
-				console.log $templateCache
 				task() for task in @tasks
 				@tasks = []
 
@@ -693,7 +692,7 @@ class Session
 			sent.action = action
 			sent.room = @room
 			@primus.write sent
-			console.log 'action: ' , sent
+			console.log 'action: ' + action, sent
 
 	action_chat: (text)->
 			text : text
@@ -706,7 +705,7 @@ class Session
 		newroom = newroom or @room
 		
 		if not @joined
-			eventBus.fire 'connected'
+			eventBus.fireAsync 'connected'
 			@joined = true
 			return {
 				to : newroom
@@ -715,7 +714,7 @@ class Session
 		else if newroom is @room then return {
 			as : @nickname
 		} else
-			eventBus.fire 'connected'
+			eventBus.fireAsync 'connected'
 			return {
 				from : @room
 				to : newroom
