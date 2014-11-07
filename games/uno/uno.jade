@@ -13,18 +13,18 @@ asset
 			Eugene 玩家E
 			Finch 玩家F
 		color
-			red red
-			blue blue
-			yellow yellow
-			green green
-			wild wild
+			red 红
+			blue 蓝
+			yellow 黄
+			green 绿
+			wild 无
 		card
 			name
-				Reverse reverse
-				DrawTwo drawtwo
-				Skip skip
-				Wild wild
-				WildFour wildfour
+				Reverse 反转
+				DrawTwo +2
+				Skip 跳过
+				Wild 任意
+				WildFour +4
 			desc
 				Number 接数字或者颜色。
 				Reverse 行动顺序反转。
@@ -59,9 +59,19 @@ asset
 				keep 保留摸到的牌。
 		logs
 			label
-				played {{card}}
+				match {{color}}{{name}}
+				play {{color}}{{name}}
+				draw 摸牌
+				skip 跳过
+				reverse 反转
+				won {{player}}胜利
 			text
-				played {{player}}打出了{{card}}。
+				match {{player}}需要匹配{{color}}色或{{name}}
+				play {{player}}打出了{{color}}色{{name}}
+				draw {{player}}摸了{{count}}张牌
+				skip {{player}}的回合被跳过了！
+				reverse 玩家顺序方向倒转！
+				won {{player}}获得了胜利！
 	js
 		draw
 			:coffee

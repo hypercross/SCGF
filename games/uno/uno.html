@@ -15,19 +15,19 @@
       <Finch>玩家F</Finch>
     </avatar>
     <color>
-      <red>red</red>
-      <blue>blue</blue>
-      <yellow>yellow</yellow>
-      <green>green</green>
-      <wild>wild</wild>
+      <red>红</red>
+      <blue>蓝</blue>
+      <yellow>黄</yellow>
+      <green>绿</green>
+      <wild>无</wild>
     </color>
     <card>
       <name>
-        <Reverse>reverse</Reverse>
-        <DrawTwo>drawtwo</DrawTwo>
-        <Skip>skip</Skip>
-        <Wild>wild</Wild>
-        <WildFour>wildfour</WildFour>
+        <Reverse>反转</Reverse>
+        <DrawTwo>+2</DrawTwo>
+        <Skip>跳过</Skip>
+        <Wild>任意</Wild>
+        <WildFour>+4</WildFour>
       </name>
       <desc>
         <Number>接数字或者颜色。</Number>
@@ -69,10 +69,20 @@
     </playtip>
     <logs>
       <label>
-        <played>{{card}}</played>
+        <match>{{color}}{{name}}</match>
+        <play>{{color}}{{name}}</play>
+        <draw>摸牌</draw>
+        <skip>跳过</skip>
+        <reverse>反转</reverse>
+        <won>{{player}}胜利</won>
       </label>
       <text>
-        <played>{{player}}打出了{{card}}。</played>
+        <match>{{player}}需要匹配{{color}}色或{{name}}</match>
+        <play>{{player}}打出了{{color}}色{{name}}</play>
+        <draw>{{player}}摸了{{count}}张牌</draw>
+        <skip>{{player}}的回合被跳过了！</skip>
+        <reverse>玩家顺序方向倒转！</reverse>
+        <won>{{player}}获得了胜利！</won>
       </text>
     </logs>
   </text>

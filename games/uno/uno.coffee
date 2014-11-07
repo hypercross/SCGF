@@ -13,7 +13,7 @@ renderCardName = (s)->
 	return '@card>name>'+s	
 
 renderCardDesc = (s)->
-	return '@card>desc>number' if typeof s is 'number'
+	return '@card>desc>Number' if typeof s is 'number'
 	return '@card>desc>'+s	
 
 # 游戏实体结构 ##############################################
@@ -40,8 +40,8 @@ class UnoCard extends Entity.Card
 
 			render_front = =>
 				template : 'front_card'
-				name : renderCardName @name
-				color : '@color>' + @color
+				name : @name
+				color : @color
 				hint : renderCardDesc @name
 
 			render_back = ->
@@ -83,11 +83,10 @@ class UnoDeck extends Entity.CardSlot
 			template : 'deck'
 			draw : @draw.deck.length
 			discard : @discarded.deck.length
-			color : '@color>' + (@game().uno_state or {color:'wild'}).color
+			color : (@game().uno_state or {color:'wild'}).color
 			symbol : @getViewedSymbol()
 	getViewedSymbol:->
-		symbol = (@game().uno_state or {name:'Wild'}).name
-		return renderCardName symbol
+		(@game().uno_state or {name:'Wild'}).name
 	drawTo:(player,count)->
 		count = count or 1
 		if @draw.deck.length == 0
@@ -150,10 +149,10 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 		deck : UnoDeck
 
 @layout = (options)->[
-    ['player']
-    ['draw']
-    []
-    ['player', 'hand']
+	['player']
+	['draw']
+	[]
+	['player', 'hand']
 ]
 
 @avatars = (options)->
@@ -192,13 +191,20 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 		return null
 
 	while true
-		logger.log current_player.name + ' asked to play'
-		logger.log 'to match : ' + uno_state.color + 
-			' ' + uno_state.name
-		logger.log current_player.name + ' has:'
-		logger.log _.reduce current_player.hand.deck, (sum,card)->
-			sum += card.color + ' ' + card.name + ', '
-		, ''
+		# logger.log current_player.name + ' asked to play'
+		# logger.log 'to match : ' + uno_state.color + 
+		# 	' ' + uno_state.name
+		# logger.log current_player.name + ' has:'
+		# logger.log _.reduce current_player.hand.deck, (sum,card)->
+		# 	sum += card.color + ' ' + card.name + ', '
+		# , ''
+
+		logger.log()
+		logger.log 'match', 
+			player : '@' + current_player.name
+			color : '@color>' + uno_state.color
+			name : renderCardName uno_state.name
+
 
 		# 接牌，或者摸牌
 		current_player.asked
@@ -215,15 +221,18 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 
 		action = _.findKey current_player.targets, (one)->true
 		chosen = current_player.targets[action]
-		logger.log current_player.name + ' chose ' + action
+		# logger.log current_player.name + ' chose ' + action
 
 		# 若选择摸牌
 		if action is 'draw'
 			# 摸牌
 			card = deck.drawTo current_player
 			deck.notify();
-			logger.log current_player.name + ' drew ' +
-				card.color + ' ' + card.name
+			# logger.log current_player.name + ' drew ' +
+			# 	card.color + ' ' + card.name
+			logger.log 'draw.blue',
+				player : '@' + current_player.name
+				count : 1
 			# 可选择立即使用
 			current_player.asked
 				as_yellow_empty : (choice)->
@@ -244,7 +253,7 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 			action = _.findKey current_player.targets, (one)->true
 			chosen = current_player.targets[action]
 			if action.slice(0,3) is 'as_' then chosen = [card]
-			logger.log current_player.name + ' chose ' + action
+			# logger.log current_player.name + ' chose ' + action
 
 		# 若使用牌
 		if chosen and chosen.length > 0
@@ -256,13 +265,20 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 				when 'b' then uno_state.color = 'blue'
 				when 'y' then uno_state.color = 'yellow'
 			uno_state.name = card.name
-			logger.log current_player.name + ' played ' + 
-				card.name + ' ' + card.color
+			# logger.log current_player.name + ' played ' + 
+			# 	card.name + ' ' + card.color
+			logger.log 'play.blue',
+				player : '@' + current_player.name
+				color : '@color>' + card.color
+				name : renderCardName uno_state.name
 			deck.discard card
 			current_player.notify()
 
 			if current_player.hand.deck.length == 0
-				logger.log current_player.name + ' has won the game.'
+				# logger.log current_player.name + ' has won the game.'
+				logger.log 'won.red',
+					player : '@' + current_player.name
+
 				score = _.reduce players, (sum, one)->
 					sum+_.reduce one.hand.deck, (sum, one)->
 						switch one.name
@@ -279,7 +295,9 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 				logger.score scores
 				return
 
-			uno_state.direction *= -1 if card.name == 'Reverse'
+			if card.name == 'Reverse'
+				uno_state.direction *= -1 
+				logger.log 'reverse.blue',{}
 
 		current_player = next(current_player)
 
@@ -287,10 +305,22 @@ NAMES = ['Alfred','Benedict','Carl','David','Eugene','Finch']
 			switch card.name
 				when 'DrawTwo'
 					deck.drawTo(current_player) for i in [1..2]
+					logger.log 'draw.blue',
+						player : '@' + current_player.name
+						count : 2
+					logger.log 'skip.blue',
+						player : '@' + current_player.name
 					current_player = next(current_player)
 				when 'WildFour'
 					deck.drawTo(current_player) for i in [1..4]
+					logger.log 'draw.blue',
+						player : '@' + current_player.name
+						count : 4
+					logger.log 'skip.blue',
+						player : '@' + current_player.name
 					current_player = next(current_player)
 				when 'Skip'
+					logger.log 'skip.blue',
+						player : '@' + current_player.name
 					current_player = next(current_player)
 			deck.notify();
