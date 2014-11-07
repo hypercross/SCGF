@@ -416,7 +416,7 @@ eventBus.on 'log', 'scgfController', (data)->
 		body = $('#info .ui.logs')
 		body.scrollTop body[0].scrollHeight
 	else
-		window.assets.onloaded ->
+		window.assets.onloaded =>
 			assets = window.assets
 			[label, clazz] = data.type.split '.'
 			hint  = assets.text 'logs>text>'+label
