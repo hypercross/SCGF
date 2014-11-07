@@ -720,7 +720,8 @@ class Session
 				to : newroom
 				as : @nickname
 			}
-		@saveCache @nickname, newroom
+		@room = newroom
+		@saveCache @nickname, @room
 
 	action_avatar: (avatar, group)->
 			avatar : avatar
