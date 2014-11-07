@@ -276,7 +276,7 @@ games = {}
 	# in game : cannot select Candidate
 	# only Candidate can be Controller if there isn't one
 
-	game.assignAvatarAs player, avatar, group
+	game.assigner.assignAvatarAs player, avatar, group
 	game.updateSnapshot player
 
 @play = (room, spark, action, ids)->
