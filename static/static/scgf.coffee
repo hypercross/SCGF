@@ -377,7 +377,7 @@ eventBus.on 'avatar', 'scgfController', (data)->
 				if val.id is id
 					@scope.players.splice(key,1)
 					break
-				@.jGrowl val.name + '离开了游戏。'
+				$.jGrowl val.name + '离开了游戏。'
 
 		modify : (id, data)=>
 			for val in @scope.players
