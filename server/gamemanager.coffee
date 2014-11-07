@@ -162,6 +162,7 @@ class Room
 			@registerWatcher entity
 		@game.start()
 
+		@assigner.reset()
 		for p in @players.all
 			@assigner.assignAvatar p
 		@updateDesc()
