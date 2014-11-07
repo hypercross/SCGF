@@ -70,7 +70,7 @@ class Actions
 			user: (games.getPlayer(room, spark) or {}).name
 			text: context.text
 			, 'action_chat'
-		speaker = games.getName room, spark
+		speaker = (games.getPlayer(room, spark) or {}).name
 		spark.scgf_room room, 'chat', speaker, context.text
 
 	game: (spark, room, context)->
