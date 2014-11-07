@@ -1,6 +1,6 @@
 # utility ###################################################
 
-patch_list = (op, handler, item)->
+patchList = (op, handler, item)->
 		code = op[0]
 		id = op.slice(1)
 		switch code
@@ -36,15 +36,15 @@ $.fn.distanceTo = (thing)->
 	left : thing.offset().left - @offset().left
 	top : thing.offset().top - @offset().top
 
-$.fn.velocity_clean = (config, time, callback)->
+$.fn.velocityClean = (config, time, callback)->
 	@velocity config, time, =>
 		@removeAttr 'style'
 		callback()
 
-$.fn.velocity_in = (config, time, callback)->
+$.fn.velocityIn = (config, time, callback)->
 	for key of config
 		config[key] = [$(this).css(key), "easeInSine", 0]
-	@velocity_clean config, time, callback
+	@velocityClean config, time, callback
 
 assignPlace = (place)->
 	return false if not place
@@ -77,87 +77,282 @@ fireProjectile = (projectile, from, to)->
 window.fireProjectile = fireProjectile
 
 class EventBus
-	on : (name, func)->
+	constructor: ->
+		@scopes = {}
+	scope : (name, scope)->
+		@scopes[name] = scope
+	on : (name, scope, func)->
 		@[name] = @[name] or []
-		@[name].push func
+		@[name][scope] = @[name][scope] or []
+		@[name][scope].push func
 		return
 	fire : (name, data)->
 		console.log 'event: ' + name
 		console.log data
-		for func in (@[name] or [])
-			func.call(null, data)
+		for scope of @[name]
+			for func in (@[name][scope] or [])
+				func.call(scopes[scope], data)
 		return
 
 eventBus = new EventBus()
 
 # angular #############################################
 
-angular.module 'scgf', ['ngAnimate']
-	.controller 'gameController', ['$scope', '$templateCache', ($scope, $templateCache)->
-		$scope.game_cover = ''
-		$scope.game_list = []
+# modals and main - root scope
+#    roomlist, players, session, logs
+
+# game sidebar - game scope
+#    game list, current game, configs, options
+
+# room sidebar - room scope
+#    current player, avatars
+
+# chat - chat scope
+#    chats
+
+# container - container scope
+#    buttons, cards, chosen
+
+scgf = angular.module 'scgf', ['ngAnimate']
+	
+scgf.controller 'scgfController', ['$scope', '$sce', ($scope, $sce)->
+	eventBus.scope 'scgfController', 
+		scope : $scope
+	$scope.roomlist = []
+	$scope.players = []
+	$scope.logs = []
+	$scope.session = {
+		user : window.session.nickname
+		room : window.session.room
+	}
+
+	$scope.resetSession = ->
+		$scope.roomlist.length = 0
+		$scope.players.length = 0
+		$scope.logs.length = 0
+
+	$scope.connectedSession = ->
+		user : window.session.nickname
+		room : window.session.room
+
+	$scope.connect = ->
+		session = window.session
+		info = $scope.session
+		if session.room isnt info.room then $scope.resetSession()
+		session.act 'room', info.room, info.user
+]
+
+scgf.controller 'gameController', ['$scope', '$templateCache', ($scope, $templateCache)->
+	eventBus.scope 'gameController', 
+		scope : $scope
+		templateCache : templateCache
+	$scope.gameCover = ''
+	$scope.gamelist = []
+	$scope.options = {}
+	$scope.config = {}
+	$scope.selected = ''
+	$scope.current = ''
+
+	$scope.resetGames = ->
+		$scope.gameCover = ''
+		$scope.gamelist.length = 0
 		$scope.options = {}
 		$scope.config = {}
-		$scope.roomlist = []
+		$scope.selected = ''
+		$scope.current = ''
 
-		$scope.$root.roomlist = ->
-			$scope.roomlist
+	$scope.select = (thing)-> $scope.selected = thing
+	$scope.load = ->
+		return if not $scope.selected
+		window.session.act 'game', 'setup', $scope.selected, $scope.options
+]
 
-		eventBus.on 'list', (data)->
-			$scope.roomlist = data
-			$scope.$apply()
-		eventBus.on 'room', (data)->
-			assets = window.assets
-			if data.asset
-				console.log 'load ' + data.asset
-				assets.load data.asset, $templateCache
-			if data.manifest
-				$scope.current = data.manifest
-				$scope.selected = data.manifest
-				assets.onloaded ->
-					$scope.game_cover = assets.text 'cover_img'
-					$scope.game_description = assets.text '>desc'
-					$scope.$apply()
-				$.jGrowl '当前游戏：' + data.manifest
-			if data.config
-				$scope.options = data.options
-				$scope.config = data.config
-				for key of data.config
-					continue if $scope.options[key] isnt undefined
-					$scope.options[key] = data.config[key][0]
-			if data.gamelist
-				$scope.game_list = data.gamelist
-			$scope.$apply()
+scgf.controller 'roomController', ['$scope', '$sce', ($scope,$sce)->
+	eventBus.scope 'roomController', 
+		scope : $scope
+		sce : $sce
+	$scope.avatars = []
+	$scope.self = {}
 
-		$scope.select = (thing)-> $scope.selected = thing
-		$scope.load   = ->
-			selected = $scope.selected
-			return if not selected
-			window.session.act 'game', 'setup', selected, $scope.options
-		return
-		]
-	.controller 'roomController', ['$scope', '$sce', ($scope,$sce)->
+	$scope.resetAvatar = ->
 		$scope.avatars = []
-		$scope.players = []
 		$scope.self = {}
-		$scope.logs = []
 
-		$scope.$root.onJoin = ->
-			$scope.avatars = []
-			$scope.players = []
-			$scope.self = {}
-			$scope.logs = []
-		$scope.$root.players = ->
-			$scope.players
-		$scope.$root.logs = ->
-			$scope.logs
+	changeAvatarRole = (avatar, role)->
+		return if not $scope.self.name # doesn't exist
+		avatar = avatar or $scope.self.avatar
+		role = role or $scope.self.role
+		window.session.act 'avatar', avatar, role
 
-		eventBus.on 'room', (data)->
-			$scope.avatars = data.avatars
-			$scope.$apply()
-		eventBus.on 'avatar', (data)->
+	$scope.select = (thing)-> changeAvatarRole null, thing
+	$scope.selectAvatar = (guy)-> changeAvatarRole guy, null
+]
 
-			sanitize = (obj, id,data)->
+scgf.controller 'chatController', ['$scope','$sce', ($scope,$sce)->
+	eventBus.scope 'chatController', 
+		scope : $scope
+		sce : $sce
+	$scope.chats = []
+]
+
+scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
+	eventBus.scope 'containerController', 
+		scope : $scope
+		sce : $sce
+	# card hierarchy, with id lookup
+	$scope.cards = {}
+	$scope.cards_lookup = {}
+	# button list, with enabled lookup
+	$scope.asked = []
+	$scope.asked_lookup = {}
+	# selected list, with id lookup
+	$scope.selected = []
+	$scope.selected_lookup = {}
+
+	$scope.layout = [[],[],[],[]]
+
+	$scope.setLayout = (layout)->
+		$scope.layout = layout
+		$scope.cards.top = {}
+		$scope.cards.top[key] = [] for key in layout[0]
+		$scope.cards.front = {}
+		$scope.cards.front[key] = [] for key in layout[1]
+		$scope.cards.back = {}
+		$scope.cards.back[key] = [] for key in layout[2]
+		$scope.cards.bottom = {}
+		$scope.cards.bottom[key] = [] for key in layout[3]
+
+	$scope.subarea = (place)->
+		[row, col] = place.split '.'
+		row_obj = $scope.cards[row] = $scope.cards[row] or {}
+		row_obj[col] = row_obj[col] or []
+		return row_obj[col]
+
+	$scope.handleGame = (data)->
+		id = data.id
+		window.assets.deref data
+		old = $scope.cards_lookup[id] or {}
+		$scope.cards_lookup[id] = data
+
+		# if data has place
+			# if old has same place -> replace
+			# if old has place -> remove old, add new
+			# if old has no place or there is no old -> add new
+		# if data has no place
+			# if old has place -> remove old
+			# if old has no place or there is no old -> do nothing
+
+		if assignPlace data.place
+			if old.place is data.place
+				old[key] = data[key] for key of data
+				$scope.cards_lookup[id] = old
+			else if assignPlace old.place
+				place = $scope.subarea data.place
+				place.push data
+				old_place = $scope.subarea old.place
+				old_place.remove old
+			else
+				place = $scope.subarea data.place
+				place.push data
+		else
+			if assignPlace old.place
+				old.to = data.place
+				old_place = $scope.subarea old.place
+				old_place.remove old
+			else if data.place and data.from
+				projectile = $ window.assets.templateAngular data.template, data
+				fireProjectile projectile, $('.cardframe.'+data.from.slice(1)), 
+					$('.cardframe.'+data.place.slice(1)) 
+
+		if data.asked 
+			$scope.asked = data.asked
+			if data.asked[0] == 'next_game'
+				window.setTimeout ->
+					$('.modal#result').modal('show')
+				, 1000
+			$scope.selected = []
+			$scope.selected_lookup = {}
+
+	$scope.updateFilter = ->
+		access = $scope.cards
+		selected = $scope.selected
+
+		for ask in $scope.asked
+			fn = window.assets.function ask
+			b = fn.call(null, access, selected)
+			$scope.asked_lookup[ask] = b
+
+		for row of access
+			for column of access[row]
+				for toselect in access[row][column]
+					if $scope.isSelected toselect
+						toselect.enabled = true
+						continue
+					else 
+						toselect.enabled = false
+
+					for ask in $scope.asked
+						fn = window.assets.function ask
+						b = fn.call(null, access, selected, toselect)
+						toselect.enabled = toselect.enabled or b
+		return
+	$scope.select = (one)->
+		return if not one.enabled
+		if $scope.isSelected one
+			$scope.selected.remove one
+			delete $scope.selected_lookup[one.id]
+		else
+			$scope.selected.push one
+			$scope.selected_lookup[one.id] = one
+		$scope.updateFilter()
+	$scope.isSelected = (one)->
+		$scope.selected_lookup[one.id]
+	$scope.submit = (ask)->
+		return if not $scope.asked_lookup[ask]
+		window.session.act 'play', ask, $scope.selected
+		$scope.asked_lookup[ask] = false for ask in $scope.asked
+		return
+]
+
+# events handling #################################################################
+
+eventBus.on 'list','scgfController', (data)->
+	@scope.roomlist = data
+	@scope.$apply()
+
+eventBus.on 'room', 'gameController', (data)->
+	assets = window.assets
+	if data.asset
+		console.log 'load ' + data.asset
+		assets.load data.asset, @templateCache
+	if data.manifest
+		@scope.current = data.manifest
+		for agame in data.gamelist or []
+			if agame is data.manifest
+				@scope.selected = agame
+				break
+		assets.onloaded ->
+			@scope.gameCover = assets.text 'cover_img'
+			@scope.game_description = assets.text '>desc'
+			@scope.$apply()
+		$.jGrowl '当前游戏：' + data.manifest
+	if data.config
+		@scope.options = data.options
+		@scope.config = data.config
+		for key of data.config
+			continue if @scope.options[key] isnt undefined
+			@scope.options[key] = data.config[key][0]
+	if data.gamelist
+		@scope.gamelist = data.gamelist
+	@scope.$apply()
+
+eventBus.on 'room', 'roomController', (data)->
+	@scope.avatars = data.avatars
+	@scope.$apply()
+
+eventBus.on 'avatar', 'scgfController', (data)->
+
+	sanitize = (obj, id, data)->
 				obj.id = id
 				obj.avatar = data.avatar or 'none'
 				obj.role = data.group
@@ -165,326 +360,185 @@ angular.module 'scgf', ['ngAnimate']
 				obj.score = data.score
 				return obj
 
-			patch_list data.patch, 
-				insert : (id, data)->
-					$scope.players.push sanitize {},id,data
-					if data.name is $scope.$parent.user
-						$scope.self = $scope.players.last
-					if data.name isnt 'anonymous'
-						$.jGrowl data.name + '加入了游戏。'
+	patchList data.patch,
+		insert : (id, data)->
+			@scope.players.push sanitize {},id,data
+			if data.name isnt 'anonymous'
+				$.jGrowl data.name + '加入了游戏。'
 
-				delete : (id)->
-					for val,key in $scope.players
-						if val.id is id
-							$scope.players.splice(key,1)
-							break
-					if $scope.self.id is id
-						$scope.self = {}
-					else
-						$.jGrowl val.name + '离开了游戏。'
-
-				modify : (id, data)->
-					for val,key in $scope.players
-						if val.id is id
-							if val.name is 'anonymous'
-								if data.name isnt 'anonymous'
-									$.jGrowl data.name + '加入了游戏。'
-							old = $scope.players[key]
-							old.current_score = data.score - old.score
-							sanitize old,id,data
-							if data.name is $scope.$parent.user
-								$scope.self = old
-							break
-					
-				, data
-			$scope.$apply()
-		eventBus.on 'log', (data)->
-			if typeof data == 'string'
-				$scope.logs.push $sce.trustAsHtml data
-				$scope.$apply()
-				body = $('#info .ui.logs')
-				body.scrollTop body[0].scrollHeight
-			else
-				window.assets.onloaded ->
-					assets = window.assets
-					[label, clazz] = data.type.split '.'
-					hint  = assets.text 'logs>text>'+label
-					label = assets.text 'logs>label>'+label
-					data.vars = assets.deref data.vars
-					data.vars.hint = hint.format assets.deref data.vars
-					data.vars.label = label.format data.vars
-					data.vars.clazz = clazz
-
-					log = window.assets.template 'log_entry', data.vars
-					$scope.logs.push $sce.trustAsHtml log
-					$scope.$apply()
-					body = $('#info .ui.logs')
-					body.scrollTop body[0].scrollHeight
-
-		change_avatar_role = (avatar, role)->
-			return if not $scope.self.name # doesn't exist
-			avatar = avatar or $scope.self.avatar
-			role = role or $scope.self.role
-			window.session.act 'avatar', avatar, role
-
-		$scope.select = (thing)-> 
-			change_avatar_role null, thing
-			#$scope.self.role = thing
-		$scope.select_avatar = (guy)-> 
-			#$scope.self.avatar = guy
-			change_avatar_role guy, null
-		return
-		]
-	.controller 'chatController', ['$scope','$sce', ($scope,$sce)->
-		$scope.chats = []
-
-		eventBus.on 'chat', (data)->
-			$scope.chats.push $sce.trustAsHtml data
-			$scope.$apply()
-			$.jGrowl data
-			body = $('.hover.message')
-			body.scrollTop body[0].scrollHeight
-		return
-		]
-	.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
-		# card hierarchy, with id lookup
-		$scope.cards = {}
-		$scope.cards_lookup = {}
-		# button list, with enabled lookup
-		$scope.asked = []
-		$scope.asked_lookup = {}
-		# selected list, with id lookup
-		$scope.selected = []
-		$scope.selected_lookup = {}
-
-		$scope.layout = [[],[],[],[]]
-
-		setLayout = (layout)->
-			$scope.layout = layout
-			$scope.cards.top = {}
-			$scope.cards.top[key] = [] for key in layout[0]
-			$scope.cards.front = {}
-			$scope.cards.front[key] = [] for key in layout[1]
-			$scope.cards.back = {}
-			$scope.cards.back[key] = [] for key in layout[2]
-			$scope.cards.bottom = {}
-			$scope.cards.bottom[key] = [] for key in layout[3]
-
-		area = (place)->
-			[row, col] = place.split '.'
-			row_obj = $scope.cards[row] = $scope.cards[row] or {}
-			row_obj[col] = row_obj[col] or []
-			return row_obj[col]
-
-		handle_game = (data)->
-
-			if data.template is 'player'
-				if data.status is 'playing'
-					data.icon = 'red loading' 
-				else data.icon = 'green checkmark'
-				for p in $scope.$root.players()
-					continue if p.avatar isnt data.name.slice(1)
-					continue if p.role isnt 'controller'
-					data.controller = p.name
+		delete : (id)->
+			for val,key in @scope.players
+				if val.id is id
+					@scope.players.splice(key,1)
 					break
+				@.jGrowl val.name + '离开了游戏。'
 
-			id = data.id
-			window.assets.deref data
-			old = $scope.cards_lookup[id] or {}
-			$scope.cards_lookup[id] = data
+		modify : (id, data)->
+			for val in @scope.players
+				if val.id is id then break
 
-
-
-			# if data has place
-				# if old has same place -> replace
-				# if old has place -> remove old, add new
-				# if old has no place or there is no old -> add new
-			# if data has no place
-				# if old has place -> remove old
-				# if old has no place or there is no old -> do nothing
-
-			if assignPlace data.place
-				if old.place is data.place
-					old[key] = data[key] for key of data
-					$scope.cards_lookup[id] = old
-				else if assignPlace old.place
-					place = area data.place
-					place.push data
-					old_place = area old.place
-					old_place.remove old
-				else
-					place = area data.place
-					place.push data
-			else
-				if assignPlace old.place
-					old.to = data.place
-					old_place = area old.place
-					old_place.remove old
-				else if data.place and data.from
-					projectile = $ window.assets.template_angular data.template, data
-					fireProjectile projectile, $('.cardframe.'+data.from.slice(1)), 
-						$('.cardframe.'+data.place.slice(1)) 
-
-			if data.asked 
-				$scope.asked = data.asked
-				if data.asked[0] == 'next_game'
-					window.setTimeout ->
-						$('.modal#result').modal('show')
-					, 1000
-				$scope.selected = []
-				$scope.selected_lookup = {}
-
-		eventBus.on 'snapshot', (data)->
-			$scope.cards = {}
-			$scope.cards_lookup = {}
-			$scope.asked = []
-			$scope.selected = []
-			$scope.selected_lookup = {}
-			setLayout data.layout
-			window.assets.onloaded ->
-				for view in data.view
-					handle_game view
-				$scope.updateFilter()
-				$scope.$apply()
-			$scope.$apply()
-		eventBus.on 'game', (data)->
-			window.assets.onloaded ->
-				handle_game data
-				$scope.updateFilter()
-				$scope.$apply()
-			return
-
-		$scope.updateFilter = ->
-			access = $scope.cards
-			selected = $scope.selected
-
-			for ask in $scope.asked
-				fn = window.assets.function ask
-				b = fn.call(null, access, selected)
-				$scope.asked_lookup[ask] = b
-
-			for row of access
-				for column of access[row]
-					for toselect in access[row][column]
-						if $scope.isSelected toselect
-							toselect.enabled = true
-							continue
-						else 
-							toselect.enabled = false
-
-						for ask in $scope.asked
-							fn = window.assets.function ask
-							b = fn.call(null, access, selected, toselect)
-							toselect.enabled = toselect.enabled or b
-			return
-		$scope.select = (one)->
-			return if not one.enabled
-			if $scope.isSelected one
-				$scope.selected.remove one
-				delete $scope.selected_lookup[one.id]
-			else
-				$scope.selected.push one
-				$scope.selected_lookup[one.id] = one
-			$scope.updateFilter()
-		$scope.isSelected = (one)->
-			$scope.selected_lookup[one.id]
-		$scope.submit = (ask)->
-			return if not $scope.asked_lookup[ask]
-			window.session.act 'play', ask, $scope.selected
-			$scope.asked_lookup[ask] = false for ask in $scope.asked
-			return
-		]
-	.controller 'sessionController', ['$scope', ($scope)->
-		parent = $scope.$parent
-		parent.user = window.session.nickname
-		parent.room = window.session.room
-		parent.connect = ->
-			session = window.session
-			if session.room isnt parent.room then parent.onJoin()
-			session.act 'room', parent.room, parent.user
-
-		eventBus.on 'init', ->
-			parent.onJoin()
-		]
-	.animation '.cardframe', ->
-		enter: (dom, done)->
-			dom.find('[title]').popup()
-			card = dom.scope().card
-			if card.from
-				if assignPlace card.from
-					from = card.id
-				else
-					from = card.from.slice(1)
-				tgt = $('.cardframe.'+from).not(dom)
-				if tgt.length
-					{ left, top } = dom.distanceTo tgt
-					width_to = dom.width()
-					dom.css 'width', 0
-					dom.offset tgt.offset()
-					dom.velocity_clean
-						left: 0
-						top: 0
-						width: [width_to, "easeInSine", 0]
-						, 800, -> done()
-					return
+			if val.name is 'anonymous'
+				if data.name isnt 'anonymous'
+					$.jGrowl data.name + '加入了游戏。'
 			
-			dom.velocity_clean
-				opacity: [1, "easeInSine", 0]
-				width: [dom.width(), "easeInSine", 0]
-				, 300, -> done()
-			return
-		leave: (dom,done)->
-			dom.find('[title]').popup 'remove'
-			card = dom.scope().card
-			console.log card
-			if card.to and not assignPlace(card.to)
-				to = card.to.slice(1)
-				tgt = $('.cardframe.'+to)
-				if tgt.length
-					{ left, top } = $(dom).distanceTo tgt
-					dom.velocity
-						left: [left, "easeInSine", 0]
-						top: [top, "easeInSine", 0]
-						opacity : [0 ,"easeInSine", 1]
-						width: 0
-						, 800, -> done()			
-					return
+			val.current_score = data.score - val.score
+			sanitize val,id,data
+	, data
 
-			dom.css 'opacity', 0
-			dom.velocity
-				width : 0
-				, 300, -> done()
-			return
-	.animation '.playbutton', ->
-		enter: (dom,done)->
-			dom.popup()
-			dom.css 'overflow-x','hidden'
-			dom.velocity_in
-				width: true
-				'padding-left': true
-				'padding-right': true
-			, 300, ->done()
-			return
-		leave: (dom,done)->
-			dom.popup 'remove'
-			dom.css 'overflow-x','hidden'
-			dom.velocity
-				width: 0
-				'padding-left': 0
-				'padding-right': 0
-			, 300, ->done()
-			return
-	.filter 'lookup', ->
-		(input)->
-			result = window.assets.text input
-			return result if result
-			return input
+eventBus.on 'avatar', 'roomController', (data)->
+	return if data.patch[0] is 'm'
+	return if data.name isnt @scope.session.user
+
+	@scope.self = {}
+	for one in @scope.players
+		if one.name is data.name
+			@scope.self = one
+
+eventBus.on 'log', 'scgfController', (data)->
+	if typeof data is 'string'
+		@scope.logs.push @sce.trustAsHtml data
+		@scope.$apply()
+		body = $('#info .ui.logs')
+		body.scrollTop body[0].scrollHeight
+	else
+		window.assets.onloaded ->
+			assets = window.assets
+			[label, clazz] = data.type.split '.'
+			hint  = assets.text 'logs>text>'+label
+			label = assets.text 'logs>label>'+label
+			data.vars = assets.deref data.vars
+			data.vars.hint = hint.format assets.deref data.vars
+			data.vars.label = label.format data.vars
+			data.vars.clazz = clazz
+			log = window.assets.template 'log_entry', data.vars
+
+			@scope.logs.push @sce.trustAsHtml log
+			@scope.$apply()
+			body = $('#info .ui.logs')
+			body.scrollTop body[0].scrollHeight
+
+
+eventBus.on 'chat','chatController', (data)->
+	@scope.chats.push @sce.trustAsHtml data
+	@scope.$apply()
+	$.jGrowl data
+	body = $('.hover.message')
+	body.scrollTop body[0].scrollHeight
+
+eventBus.on 'snapshot', 'containerController', (data)->
+	@scope.cards = {}
+	@scope.cards_lookup = {}
+	@scope.asked = []
+	@scope.selected = []
+	@scope.selected_lookup = {}
+	@scope.setLayout data.layout
+	window.assets.onloaded ->
+		for view in data.view
+			@scope.handleGame view
+		@scope.updateFilter()
+		@scope.$apply()
+	$scope.$apply()
+
+eventBus.on 'game', 'containerController', (data)->
+	window.assets.onloaded ->
+		@scope.handleGame data
+		@scope.updateFilter()
+		@scope.$apply()
+	return
+
+# animation ##################################################
+
+scgf.animation '.cardframe', ->
+	enter: (dom, done)->
+		dom.find('[title]').popup()
+		card = dom.scope().card
+		if card.from
+			if assignPlace card.from
+				from = card.id
+			else
+				from = card.from.slice(1)
+			tgt = $('.cardframe.'+from).not(dom)
+			if tgt.length
+				{ left, top } = dom.distanceTo tgt
+				width_to = dom.width()
+				dom.css 'width', 0
+				dom.offset tgt.offset()
+				dom.velocityClean
+					left: 0
+					top: 0
+					width: [width_to, "easeInSine", 0]
+					, 800, -> done()
+				return
+		
+		dom.velocityClean
+			opacity: [1, "easeInSine", 0]
+			width: [dom.width(), "easeInSine", 0]
+			, 300, -> done()
+		return
+	leave: (dom,done)->
+		dom.find('[title]').popup 'remove'
+		card = dom.scope().card
+		console.log card
+		if card.to and not assignPlace(card.to)
+			to = card.to.slice(1)
+			tgt = $('.cardframe.'+to)
+			if tgt.length
+				{ left, top } = $(dom).distanceTo tgt
+				dom.velocity
+					left: [left, "easeInSine", 0]
+					top: [top, "easeInSine", 0]
+					opacity : [0 ,"easeInSine", 1]
+					width: 0
+					, 800, -> done()			
+				return
+
+		dom.css 'opacity', 0
+		dom.velocity
+			width : 0
+			, 300, -> done()
+		return
+.animation '.playbutton', ->
+	enter: (dom,done)->
+		dom.popup()
+		dom.css 'overflow-x','hidden'
+		dom.velocityIn
+			width: true
+			'padding-left': true
+			'padding-right': true
+		, 300, ->done()
+		return
+	leave: (dom,done)->
+		dom.popup 'remove'
+		dom.css 'overflow-x','hidden'
+		dom.velocity
+			width: 0
+			'padding-left': 0
+			'padding-right': 0
+		, 300, ->done()
+		return
+.filter 'lookup', ->
+	(input)->
+		result = window.assets.text input
+		return result if result
+		return input
+.filter 'whosbehind', ->
+	(input, $scope)->
+		for p in $scope.players
+			if p.avatar is input and p.role is 'controller'
+				return p.name
+		return input
+.filter 'iconof', ->
+	(input)-> 
+		switch input
+			when 'playing' then return 'red loading'
+			when 'played' then return 'green checkmark'
+			else return 'green user'
 
 # assets ####################################################
 
 #built-in
 
-assets_common = 
+assetsCommon = 
 	'nogame' : '无游戏'
 	'candidate' : '替补'
 	'watcher' : '观战'
@@ -508,8 +562,8 @@ class Assets
 		}
 		@tasks = []
 	load: (url,$templateCache)->
-		return if url == @assets_url
-		@assets_url = url
+		return if url == @assetsUrl
+		@assetsUrl = url
 		@parsed = undefined
 		console.log 'loading assets...'
 		$.ajax
@@ -544,7 +598,7 @@ class Assets
 	text: (key)->
 		result = @parsed.find('>text ' + key).text() if @parsed
 		return result if result
-		if assets_common[key] then return assets_common[key]
+		if assetsCommon[key] then return assetsCommon[key]
 		return ''
 
 	function: (key)->
@@ -557,7 +611,7 @@ class Assets
 				vars[key] = @text avar.slice(1)
 		return vars
 
-	template_angular: (key, vars)->
+	templateAngular: (key, vars)->
 		str = @parsed.find('>templates>' + key).html();
 		vars = @deref vars
 		str = str.replace /card\./g,''
@@ -587,26 +641,17 @@ class Session
 		if @localStorage
 			@nickname = @localStorage.nickname or @nickname or '陌生人'
 			@room = @localStorage.room or @room or 'game_hall'
-			$('#tab_room #room').val(@room)
-			$('#tab_room #username').val(@nickname)
 
 	saveCache: ->
 		if @localStorage
 			@localStorage.nickname = @nickname
 			@localStorage.room = @room
 
-	connect: (@room, @nickname)->
+	connect: ->
 		@primus = new Primus()
 		@primus.on 'open', =>
 			$.jGrowl '服务器已连接。'
-			eventBus.fire 'init'
-			eventBus.fire 'snapshot', 
-				layout: [[],[],[],[]]
-				view: []
-			@primus.write
-				action : 'room'
-				to : @room
-				as : @nickname
+			eventBus.fire 'connected'
 		@primus.on 'data', (msg)=>
 			eventBus.fire msg.event, msg.data
 		@primus.on 'reconnect', ->
@@ -659,4 +704,4 @@ class Session
 
 
 @session = new Session()
-@session.connect @session.room, @session.nickname
+@session.connect()

@@ -15,7 +15,7 @@ head
 	script(src="http://cdn.bootcss.com/jquery-jgrowl/1.3.0/jquery.jgrowl.min.js")
 	script(src="/static/primus.js")
 	script(src="/static/scgf.js")
-body(ng-app="scgf")
+body(ng-app="scgf",ng-controller="scgfController")
 	//- 顶栏
 	.ui.top.inverted.teal.fixed.menu.active(ng-controller="sessionController")
 		.header.item SCGF
