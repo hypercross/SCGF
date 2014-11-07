@@ -60,14 +60,14 @@ class Actions
 
 	play: (spark, room, context)->
 		logger.log 
-			user: games.getName room, spark
+			user: (games.getPlayer(room, spark) or {}).name
 			context: context
 			,'action_play'
-		games.play room, spark.id, context.play, context.ids
+		games.play room, spark, context.play, context.ids
 
 	chat: (spark, room, context)->
 		logger.log
-			user: games.getName room, spark
+			user: (games.getPlayer(room, spark) or {}).name
 			text: context.text
 			, 'action_chat'
 		speaker = games.getName room, spark
@@ -75,13 +75,13 @@ class Actions
 
 	game: (spark, room, context)->
 		logger.log
-			user: games.getName room, spark
+			user: (games.getPlayer(room, spark) or {}).name
 			context: context
 		games.setupRoom room, context.game, context.options
 
 	avatar: (spark, room, ctx)->
 		logger.log 
-			user: games.getName room, spark
+			user: (games.getPlayer(room, spark) or {}).name
 			context : ctx
 			, 'action_avatar'
 		games.setAvatar room, spark, ctx.avatar, ctx.group
@@ -95,15 +95,15 @@ class Actions
 		games.setName room, spark, name
 
 	list : (spark, room)->
-		games.listRooms spark
 		logger.log spark.id + ' asked for roomlist'
+		games.listRooms spark
 
 	join: (spark, room)->
-		games.enterRoom room, spark
 		logger.log spark.id + ' joined room ' + room
+		games.enterRoom room, spark
 
 	leave: (spark, room, primus)->
-		games.leaveRoom room, spark
 		logger.log spark.id + ' left room ' + room
+		games.leaveRoom room, spark
 
 @actions = new Actions()
