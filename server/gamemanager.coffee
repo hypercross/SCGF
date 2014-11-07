@@ -154,6 +154,7 @@ class Room
 
 	setup: (gameName, @options)->
 		@game = @load(gameName)
+		@avatars = undefined
 		@game.setup @options
 		@game.logger @gamelogger
 		for avatar of @getAvatars()
