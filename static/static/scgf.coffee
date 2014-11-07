@@ -222,6 +222,8 @@ scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
 		$scope.cards.bottom = {}
 		$scope.cards.bottom[key] = [] for key in layout[3]
 
+		$scope.asked = []
+
 	$scope.subarea = (place)->
 		[row, col] = place.split '.'
 		row_obj = $scope.cards[row] = $scope.cards[row] or {}
@@ -457,6 +459,19 @@ eventBus.on 'game', 'containerController', (data)->
 		@scope.$apply()
 	return
 
+eventBus.on 'connected', 'scgfController', ->
+	@scope.resetSession()
+eventBus.on 'connected', 'gameController', ->
+	@scope.resetGames()
+eventBus.on 'connected', 'roomController', ->
+	@scope.resetAvatar()
+eventBus.on 'connected', 'containerController', ->
+	eventBus.fire 'snapshot', 
+		layout: [[],[],[],[]]
+		view: []
+eventBus.on 'connected', 'chatController', ->
+	@scope.chats.length = 0
+
 # animation ##################################################
 
 scgf.animation '.cardframe', ->
@@ -689,16 +704,21 @@ class Session
 		@nickname = @nickname or '陌生人'
 		newroom = newroom or @room
 		
-		if not @joined then return {
-			to : newroom
+		if not @joined
+			eventBus.fire 'connected'
+			return {
+				to : newroom
+				as : @nickname
+			}
+		else if newroom is @room then return {
 			as : @nickname
-		} else if newroom is @room then return {
-			as : @nickname
-		} else return {
-			from : @room
-			to : newroom
-			as : @nickname
-		}
+		} else
+			eventBus.fire 'connected'
+			return {
+				from : @room
+				to : newroom
+				as : @nickname
+			}
 		@saveCache @nickname, newroom
 
 	action_avatar: (avatar, group)->
