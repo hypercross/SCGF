@@ -82,19 +82,19 @@ class EventBus
 	scope : (name, scope)->
 		@scopes[name] = scope
 	on : (name, scope, func)->
-		@[name] = @[name] or []
+		@[name] = @[name] or {}
 		@[name][scope] = @[name][scope] or []
 		@[name][scope].push func
 		return
 	fire : (name, data)->
-		console.log 'event: ' + name
-		console.log data
+		console.log 'event: ' + name, data
 		for scope of @[name]
 			for func in (@[name][scope] or [])
-				func.call(scopes[scope], data)
+				func.call(@scopes[scope], data)
 		return
 
 eventBus = new EventBus()
+window.eventBus = eventBus
 
 # angular #############################################
 
@@ -145,7 +145,7 @@ scgf.controller 'scgfController', ['$scope', '$sce', ($scope, $sce)->
 scgf.controller 'gameController', ['$scope', '$templateCache', ($scope, $templateCache)->
 	eventBus.scope 'gameController', 
 		scope : $scope
-		templateCache : templateCache
+		templateCache : $templateCache
 	$scope.gameCover = ''
 	$scope.gamelist = []
 	$scope.options = {}
@@ -331,7 +331,7 @@ eventBus.on 'room', 'gameController', (data)->
 			if agame is data.manifest
 				@scope.selected = agame
 				break
-		assets.onloaded ->
+		assets.onloaded =>
 			@scope.gameCover = assets.text 'cover_img'
 			@scope.gameDesc = assets.text '>desc'
 			@scope.$apply()
@@ -361,21 +361,25 @@ eventBus.on 'avatar', 'scgfController', (data)->
 				return obj
 
 	patchList data.patch,
-		insert : (id, data)->
+		insert : (id, data)=>
 			@scope.players.push sanitize {},id,data
 			if data.name isnt 'anonymous'
 				$.jGrowl data.name + '加入了游戏。'
 
-		delete : (id)->
+		delete : (id)=>
 			for val,key in @scope.players
 				if val.id is id
 					@scope.players.splice(key,1)
 					break
 				@.jGrowl val.name + '离开了游戏。'
 
-		modify : (id, data)->
+		modify : (id, data)=>
 			for val in @scope.players
 				if val.id is id then break
+
+			if val.id isnt id 
+				console.error 'what? didnt find player to update'
+				return
 
 			if val.name is 'anonymous'
 				if data.name isnt 'anonymous'
@@ -385,14 +389,21 @@ eventBus.on 'avatar', 'scgfController', (data)->
 			sanitize val,id,data
 	, data
 
-eventBus.on 'avatar', 'roomController', (data)->
-	return if data.patch[0] is 'm'
-	return if data.name isnt @scope.session.user
+	@scope.$apply()
 
+eventBus.on 'avatar', 'roomController', (data)->
+	op = data.patch[0]
+	return if op is 'd' and @scope.self.id isnt data.patch.slice(1)
+	return if data.name and data.name isnt @scope.session.user
+
+	console.log 'self modified...'
 	@scope.self = {}
 	for one in @scope.players
 		if one.name is data.name
 			@scope.self = one
+			console.log 'self is ', one
+			@scope.$apply()
+			return
 
 eventBus.on 'log', 'scgfController', (data)->
 	if typeof data is 'string'
@@ -432,15 +443,15 @@ eventBus.on 'snapshot', 'containerController', (data)->
 	@scope.selected = []
 	@scope.selected_lookup = {}
 	@scope.setLayout data.layout
-	window.assets.onloaded ->
+	window.assets.onloaded =>
 		for view in data.view
 			@scope.handleGame view
 		@scope.updateFilter()
 		@scope.$apply()
-	$scope.$apply()
+	@scope.$apply()
 
 eventBus.on 'game', 'containerController', (data)->
-	window.assets.onloaded ->
+	window.assets.onloaded =>
 		@scope.handleGame data
 		@scope.updateFilter()
 		@scope.$apply()
@@ -524,7 +535,8 @@ scgf.animation '.cardframe', ->
 .filter 'whosbehind', ->
 	(input, $scope)->
 		for p in $scope.players
-			if p.avatar is input and p.role is 'controller'
+			aname = window.assets.text p.avatar
+			if aname is input and p.role is 'controller'
 				return p.name
 		return input
 .filter 'iconof', ->
@@ -642,16 +654,17 @@ class Session
 			@nickname = @localStorage.nickname or @nickname or '陌生人'
 			@room = @localStorage.room or @room or 'game_hall'
 
-	saveCache: ->
+	saveCache: (user, room)->
 		if @localStorage
-			@localStorage.nickname = @nickname
-			@localStorage.room = @room
+			@localStorage.nickname = user
+			@localStorage.room = room
 
 	connect: ->
 		@primus = new Primus()
 		@primus.on 'open', =>
 			$.jGrowl '服务器已连接。'
 			eventBus.fire 'connected'
+			@joined = false
 		@primus.on 'data', (msg)=>
 			eventBus.fire msg.event, msg.data
 		@primus.on 'reconnect', ->
@@ -664,28 +677,29 @@ class Session
 			sent.action = action
 			sent.room = @room
 			@primus.write sent
+			console.log 'action: ' , sent
 
 	action_chat: (text)->
 			text : text
 
 	action_room: (newroom, @nickname)->
 		if not @primus
-			@nickname = @nickname or '陌生人'
-			@room = newroom or @room or 'game_hall'
-			@connect @room, @nickname
-			console.log @room + ',' + @nickname
-			@saveCache()
-			return
+			console.error 'hey you should have inited primus!'
 
 		@nickname = @nickname or '陌生人'
-		sent = { as : @nickname }
-		if newroom != @room and newroom
-			sent.from = @room if @room
-			sent.to = newroom 
-			@room = newroom
-		console.log sent
-		@saveCache()
-		return sent
+		newroom = newroom or @room
+		
+		if not @joined then return {
+			to : newroom
+			as : @nickname
+		} else if newroom is @room then return {
+			as : @nickname
+		} else return {
+			from : @room
+			to : newroom
+			as : @nickname
+		}
+		@saveCache @nickname, newroom
 
 	action_avatar: (avatar, group)->
 			avatar : avatar

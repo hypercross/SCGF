@@ -118,9 +118,9 @@
     </card>
     <player>
       <div class="card">
-        <p class="short">{{card.controller || '没人'}}</p>
+        <p class="short">{{card.name | whosbehind:this}}</p>
         <p class="short">{{card.name}}</p>
-        <div class="ui horizontal fitted icon divider"><i ng-class="card.icon" class="circular inverted icon"></i></div>
+        <div class="ui horizontal fitted icon divider"><i ng-class="card.status | iconof" class="circular inverted icon"></i></div>
         <div><i class="star icon">&nbsp;{{card.score}}&nbsp;</i><i class="ticket icon">&nbsp;{{card.hand}}</i></div>
       </div>
     </player>

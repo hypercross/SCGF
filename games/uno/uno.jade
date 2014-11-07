@@ -150,10 +150,10 @@ asset
 			img.uno.card(ng-src="uno/img/cover.jpg")
 		player
 			.card
-				p.short {{card.controller || '没人'}}
+				p.short {{card.name | whosbehind:this}}
 				p.short {{card.name}}
 				.ui.horizontal.fitted.icon.divider
-					i.circular.inverted.icon(ng-class="card.icon")
+					i.circular.inverted.icon(ng-class="card.status | iconof")
 				div
 					i.ticket.icon &nbsp;{{card.hand}}
 		deck
