@@ -60,28 +60,28 @@ class Actions
 
 	play: (spark, room, context)->
 		logger.log 
-			user: (games.getPlayer(room, spark) or {}).name
+			user: (games.getPlayer(room, spark) or {}).nickname
 			context: context
 			,'action_play'
 		games.play room, spark, context.play, context.ids
 
 	chat: (spark, room, context)->
 		logger.log
-			user: (games.getPlayer(room, spark) or {}).name
+			user: (games.getPlayer(room, spark) or {}).nickname
 			text: context.text
 			, 'action_chat'
-		speaker = (games.getPlayer(room, spark) or {}).name
+		speaker = (games.getPlayer(room, spark) or {}).nickname
 		spark.scgf_room room, 'chat', speaker, context.text
 
 	game: (spark, room, context)->
 		logger.log
-			user: (games.getPlayer(room, spark) or {}).name
+			user: (games.getPlayer(room, spark) or {}).nickname
 			context: context
 		games.setupRoom room, context.game, context.options
 
 	avatar: (spark, room, ctx)->
 		logger.log 
-			user: (games.getPlayer(room, spark) or {}).name
+			user: (games.getPlayer(room, spark) or {}).nickname
 			context : ctx
 			, 'action_avatar'
 		games.setAvatar room, spark, ctx.avatar, ctx.group
