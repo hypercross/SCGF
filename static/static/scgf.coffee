@@ -118,6 +118,7 @@ scgf = angular.module 'scgf', ['ngAnimate']
 scgf.controller 'scgfController', ['$scope', '$sce', ($scope, $sce)->
 	eventBus.scope 'scgfController', 
 		scope : $scope
+		sce : $sce
 	$scope.roomlist = []
 	$scope.players = []
 	$scope.logs = []
@@ -706,6 +707,7 @@ class Session
 		
 		if not @joined
 			eventBus.fire 'connected'
+			@joined = true
 			return {
 				to : newroom
 				as : @nickname
