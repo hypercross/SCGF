@@ -1,5 +1,19 @@
 # utility ###################################################
 
+debounce = (func, wait)->
+	timeout = null
+	return ->
+		me = @
+		args = arguments
+		dowork = ->
+			timeout = null
+			func.apply me, args
+		clearTimeout timeout
+		timeout = setTimeout dowork, wait
+
+defer = (func)->
+	setTimeout func(), 1
+
 patchList = (op, handler, item)->
 		code = op[0]
 		id = op.slice(1)
@@ -80,13 +94,16 @@ class EventBus
 		@scopes = {}
 	scope : (name, scope)->
 		@scopes[name] = scope
+		scope['$digest'] = debounce ->
+			scope.scope.$digest()
+		, 100
 	on : (name, scope, func)->
 		@[name] = @[name] or {}
 		@[name][scope] = @[name][scope] or []
 		@[name][scope].push func
 		return
 	fire : (name, data)->
-		console.log 'event: ' + name, data
+		# console.log 'event: ' + name, data
 		for scope of @[name]
 			for func in (@[name][scope] or [])
 				func.call(@scopes[scope], data)
@@ -278,6 +295,10 @@ scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
 				, 1000
 			$scope.selected = []
 			$scope.selected_lookup = {}
+			if data.asked.length 
+				window.document.title = '该你了！ - SCGF'
+				window.focus()
+			else window.document.title = 'SCGF'
 
 	$scope.updateFilter = ->
 		access = $scope.cards
@@ -324,7 +345,7 @@ scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
 
 eventBus.on 'list','scgfController', (data)->
 	@scope.roomlist = data
-	@scope.$apply()
+	@$digest()
 
 eventBus.on 'room', 'gameController', (data)->
 	assets = window.assets
@@ -340,7 +361,7 @@ eventBus.on 'room', 'gameController', (data)->
 		assets.onloaded =>
 			@scope.gameCover = assets.text 'cover_img'
 			@scope.gameDesc = assets.text '>desc'
-			@scope.$apply()
+			@$digest()
 		$.jGrowl '当前游戏：' + data.manifest
 	if data.config
 		@scope.options = data.options
@@ -350,11 +371,11 @@ eventBus.on 'room', 'gameController', (data)->
 			@scope.options[key] = data.config[key][0]
 	if data.gamelist
 		@scope.gamelist = data.gamelist
-	@scope.$apply()
+	@$digest()
 
 eventBus.on 'room', 'roomController', (data)->
 	@scope.avatars = data.avatars
-	@scope.$apply()
+	@$digest()
 
 eventBus.on 'avatar', 'scgfController', (data)->
 
@@ -395,7 +416,7 @@ eventBus.on 'avatar', 'scgfController', (data)->
 			sanitize val,id,data
 	, data
 
-	@scope.$apply()
+	@$digest()
 
 eventBus.on 'avatar', 'roomController', (data)->
 	op = data.patch[0]
@@ -406,13 +427,13 @@ eventBus.on 'avatar', 'roomController', (data)->
 	for one in @scope.players
 		if one.name is data.name
 			@scope.self = one
-			@scope.$apply()
+			@$digest()
 			return
 
 eventBus.on 'log', 'scgfController', (data)->
 	if typeof data is 'string'
 		@scope.logs.push @sce.trustAsHtml data
-		@scope.$apply()
+		@$digest()
 		body = $('#info .ui.logs')
 		body.scrollTop body[0].scrollHeight
 	else
@@ -428,14 +449,14 @@ eventBus.on 'log', 'scgfController', (data)->
 			log = window.assets.template 'log_entry', data.vars
 
 			@scope.logs.push @sce.trustAsHtml log
-			@scope.$apply()
+			@$digest()
 			body = $('#info .ui.logs')
 			body.scrollTop body[0].scrollHeight
 
 
 eventBus.on 'chat','chatController', (data)->
 	@scope.chats.push @sce.trustAsHtml data
-	@scope.$apply()
+	@$digest()
 	$.jGrowl data
 	body = $('.hover.message')
 	body.scrollTop body[0].scrollHeight
@@ -451,14 +472,14 @@ eventBus.on 'snapshot', 'containerController', (data)->
 		for view in data.view
 			@scope.handleGame view
 		@scope.updateFilter()
-		@scope.$apply()
-	@scope.$apply()
+		@$digest()
+	@$digest()
 
 eventBus.on 'game', 'containerController', (data)->
 	window.assets.onloaded =>
 		@scope.handleGame data
 		@scope.updateFilter()
-		@scope.$apply()
+		@$digest()
 	return
 
 eventBus.on 'connected', 'scgfController', ->
@@ -692,7 +713,7 @@ class Session
 			sent.action = action
 			sent.room = @room
 			@primus.write sent
-			console.log 'action: ' + action, sent
+			# console.log 'action: ' + action, sent
 
 	action_chat: (text)->
 			text : text
