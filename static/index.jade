@@ -137,14 +137,15 @@ body(ng-app="scgf",ng-controller="scgfController")
 
 	//- 主要
 	.ui.deep.paper#container(ng-controller="containerController")
-		.row.cardarea(id="{{row}}",ng-repeat="(i,row) in ['top','front','back','bottom']")
-			.subarea.relative(id="{{column}}",ng-repeat="column in layout[i]")
-				.cardframe(class="{{card.id}}",ng-include="card.template",
-					style="max-width:{{maxWidth(card, $last)}}"
-					ng-repeat="card in cards[row][column]",
-					ng-click="select(card)",
-					ng-class="{'disabled' : !card.enabled, 'chosen' : isSelected(card)}")
-				.absolute.backfill {{'cardarea>' + column | lookup}}
+		each row, i in ['top','front','back','bottom']
+			.row.cardarea(id=row)
+				.subarea.relative(id="{{column}}",ng-repeat="column in layout[" + i + "]")
+					.cardframe(class="{{::card.id}}",ng-include="card.template",
+						style="max-width:{{maxWidth(card, $last)}}"
+						ng-repeat="card in cards." + row + "[column]",
+						ng-click="select(card)",
+						ng-class="{'disabled' : !card.enabled, 'chosen' : isSelected(card)}")
+					.absolute.backfill {{::('cardarea>' + column | lookup)}}
 		.row.game.controls#control
 			.ui.buttons
 				.ui.small.teal.playbutton.button(
@@ -218,6 +219,8 @@ body(ng-app="scgf",ng-controller="scgfController")
 					$('.cardarea').addClass 'short'
 				else
 					$('.cardarea').removeClass 'short'
+
+				window.windowWidth = $(window).width()
 
 			$(window).resize checkSize
 			checkSize()
