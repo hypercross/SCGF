@@ -242,10 +242,9 @@
     <front_card><img ng-src="uno/img/{{card.color}}_{{card.name}}.png" class="uno card"/></front_card>
     <cover_card><img ng-src="uno/img/cover.jpg" class="uno card"/></cover_card>
     <player>
-      <div class="card">
+      <div class="card"><i ng-class="card.status | iconof" class="icon"></i>
         <p class="short">{{card.name | whosbehind:this}}</p>
-        <p class="short">{{card.name}}</p>
-        <div class="ui horizontal fitted icon divider"><i ng-class="card.status | iconof" class="circular inverted icon"></i></div>
+        <p id="side" class="short">{{card.name}}</p>
         <div><i class="ticket icon">&nbsp;{{card.hand}}</i></div>
       </div>
     </player>
@@ -287,6 +286,15 @@
     }
     .divider+div{
      margin-top: 4px;
+    }
+    
+    .mobile #side{
+     display: none;
+    }
+    
+    .mobile .card p, .mobile .card h4{
+     font-size: 1em;
+     display: inline;
     }
   </style>
 </asset>

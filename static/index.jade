@@ -210,16 +210,29 @@ body(ng-app="scgf",ng-controller="scgfController")
 				window.session.act 'list'
 
 			checkSize = ->
-				if $('#container').height() < 600
-					$('.cardarea').addClass 'mobile'
-				else
-					$('.cardarea').removeClass 'mobile'
+				containerHeight = $('#container').height()
+				cardareas = $('.cardarea')
 
-				if $('#container').height() < 720
-					$('.cardarea').addClass 'short'
-				else
-					$('.cardarea').removeClass 'short'
+				offset = 160
 
+				if containerHeight < 480
+					cardareas.addClass 'phone'
+					offset -= 96
+				else
+					cardareas.removeClass 'phone'
+
+				if containerHeight < 600
+					cardareas.addClass 'mobile'
+				else
+					cardareas.removeClass 'mobile'
+
+				if containerHeight < 720
+					cardareas.addClass 'short'
+				else
+					cardareas.removeClass 'short'
+
+				all = containerHeight - offset
+				cardareas.height(all / 4)
 				window.windowWidth = $(window).width()
 
 			$(window).resize checkSize

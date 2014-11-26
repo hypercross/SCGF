@@ -344,12 +344,13 @@ scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
 		return '1000px' if $last
 		[row, col] = card.place.split '.'
 		row_obj = $scope.cards[row]
+		col_obj = row_obj[col]
+		return '1000px' if col_obj.length <= 1
 		cols = 0
 		for acol of row_obj 
 			cols += 1
 		available = window.windowWidth - 260 - 90 * cols
-		col_obj = row_obj[col]
-		return (available / col_obj.length)+ 'px'
+		return (available / (col_obj.length - 1))+ 'px'
 ]
 
 # events handling #################################################################

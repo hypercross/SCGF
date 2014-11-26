@@ -160,10 +160,9 @@ asset
 			img.uno.card(ng-src="uno/img/cover.jpg")
 		player
 			.card
+				i.icon(ng-class="card.status | iconof")
 				p.short {{card.name | whosbehind:this}}
-				p.short {{card.name}}
-				.ui.horizontal.fitted.icon.divider
-					i.circular.inverted.icon(ng-class="card.status | iconof")
+				p.short#side {{card.name}}
 				div
 					i.ticket.icon &nbsp;{{card.hand}}
 		deck
@@ -203,4 +202,13 @@ asset
 		}
 		.divider+div{
 			margin-top: 4px;
+		}
+
+		.mobile #side{
+			display: none;
+		}
+
+		.mobile .card p, .mobile .card h4{
+			font-size: 1em;
+			display: inline;
 		}
