@@ -52,7 +52,8 @@ $.fn.distanceTo = (thing)->
 
 $.fn.velocityClean = (config, time, callback)->
 	@velocity config, time, =>
-		@removeAttr 'style'
+		for key of config
+			@css key, ''
 		callback()
 
 $.fn.velocityIn = (config, time, callback)->
@@ -339,6 +340,16 @@ scgf.controller 'containerController', ['$scope','$sce', ($scope,$sce)->
 		window.session.act 'play', ask, $scope.selected
 		$scope.asked_lookup[ask] = false for ask in $scope.asked
 		return
+	$scope.maxWidth = (card,$last)->
+		return '1000px' if $last
+		[row, col] = card.place.split '.'
+		row_obj = $scope.cards[row]
+		cols = 0
+		for acol of row_obj 
+			cols += 1
+		available = $(window).width() - 260 - 90 * cols
+		col_obj = row_obj[col]
+		return (available / col_obj.length)+ 'px'
 ]
 
 # events handling #################################################################
@@ -508,10 +519,12 @@ scgf.animation '.cardframe', ->
 				from = card.from.slice(1)
 			tgt = $('.cardframe.'+from).not(dom)
 			if tgt.length
-				{ left, top } = dom.distanceTo tgt
 				width_to = dom.width()
 				dom.css 'width', 0
-				dom.offset tgt.offset()
+				{ left, top } = dom.distanceTo tgt
+				dom.css 
+					left: left
+					top: top
 				dom.velocityClean
 					left: 0
 					top: 0

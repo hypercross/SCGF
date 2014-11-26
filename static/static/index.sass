@@ -62,7 +62,9 @@ html, body
 		text-align: left
 .ui.bottom.sidebar.active
 	overflow-y: visible
+	display: block
 .ui.bottom.sidebar
+	display: none
 	padding: 0
 .ui.hover.message
 	+user-select(all)
@@ -135,6 +137,18 @@ html, body
 	.backfill
 		padding-top: 90px
 
+.cardarea.mobile
+	height: 60px
+	margin: 3px
+	.backfill
+		padding-top: 30px
+	.card
+		height: 100%
+
+.cardarea.mobile+.controls
+	.playbutton
+		padding: 8px
+
 .cardframe
 	display: inline-block
 	vertical-align: bottom
@@ -175,3 +189,6 @@ div.jGrowl div.jGrowl-notification
 
 .cardframe.chosen>.card
 	+transform(scale(1.1))
+
+.cardframe.chosen
+	z-index: 100

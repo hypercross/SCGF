@@ -89,10 +89,9 @@ asset
 				h4 {{card.level}}
 		player
 			.card
+				i.icon(ng-class="card.status | iconof")
 				p.short {{card.name | whosbehind:this}}
-				p.short {{card.name}}
-				.ui.horizontal.fitted.icon.divider
-					i.circular.inverted.icon(ng-class="card.status | iconof")
+				p.short#side {{card.name}}
 				div
 					i.star.icon &nbsp;{{card.score}}&nbsp;
 					i.ticket.icon &nbsp;{{card.hand}}
@@ -117,4 +116,13 @@ asset
 		}
 		.divider+div{
 			margin-top: 4px;
+		}
+
+		.mobile #side{
+			display: none;
+		}
+
+		.mobile .card p, .mobile .card h4{
+			font-size: 1em;
+			display: inline;
 		}

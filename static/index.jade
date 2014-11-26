@@ -140,6 +140,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 		.row.cardarea(id="{{row}}",ng-repeat="(i,row) in ['top','front','back','bottom']")
 			.subarea.relative(id="{{column}}",ng-repeat="column in layout[i]")
 				.cardframe(class="{{card.id}}",ng-include="card.template",
+					style="max-width:{{maxWidth(card, $last)}}"
 					ng-repeat="card in cards[row][column]",
 					ng-click="select(card)",
 					ng-class="{'disabled' : !card.enabled, 'chosen' : isSelected(card)}")
@@ -208,7 +209,12 @@ body(ng-app="scgf",ng-controller="scgfController")
 				window.session.act 'list'
 
 			checkSize = ->
-				if $('#container').height() < 800
+				if $('#container').height() < 600
+					$('.cardarea').addClass 'mobile'
+				else
+					$('.cardarea').removeClass 'mobile'
+
+				if $('#container').height() < 720
 					$('.cardarea').addClass 'short'
 				else
 					$('.cardarea').removeClass 'short'
