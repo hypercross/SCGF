@@ -375,7 +375,7 @@ eventBus.on 'room', 'gameController', (data)->
 			@scope.gameDesc = assets.text '>desc'
 			@$digest()
 		$.jGrowl '当前游戏：' + data.manifest
-	if data.config
+	# if data.config
 		@scope.options = data.options
 		@scope.config = data.config
 		for key of data.config

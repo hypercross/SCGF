@@ -120,16 +120,19 @@ html, body
 	white-space: nowrap
 
 .subarea
-	height: 100%
+	top: auto
+	bottom: auto
 	min-width: 80px
 	display: inline-block
-	vertical-align: bottom
+	vertical-align: top
 	border-color: #666
 	margin-left: 5px
 	margin-right: 5px
 
 .cardarea
 	height: 150px
+	.subarea
+		height: 180px
 	margin-top: 15px
 	margin-bottom: 15px
 	text-align: center
@@ -137,11 +140,15 @@ html, body
 
 .cardarea.short
 	height: 120px
+	.subarea
+		height: 120px
 	.backfill
 		padding-top: 90px
 
 .cardarea.mobile
 	height: 90px
+	.subarea
+		height: 90px
 	.backfill
 		padding-top: 60px
 	.card
@@ -149,6 +156,8 @@ html, body
 
 .cardarea.mobile.phone
 	height: 60px
+	.subarea
+		height: 60px
 	margin: 3px
 	.backfill
 		padding-top: 30px
