@@ -134,7 +134,15 @@ window.eventBus = eventBus
 # container - container scope
 #    buttons, cards, chosen
 
-scgf = angular.module 'scgf', ['ngAnimate']
+MOBILE = true
+if navigator
+	ua = (navigator.userAgent or '').toLowerCase()
+	MOBILE = ua.indexOf('mobile') > -1
+
+if MOBILE
+	scgf = angular.module 'scgf', []
+else
+	scgf = angular.module 'scgf', ['ngAnimate']
 	
 scgf.controller 'scgfController', ['$scope', '$sce', ($scope, $sce)->
 	eventBus.scope 'scgfController', 
@@ -509,7 +517,7 @@ eventBus.on 'connected', 'chatController', ->
 
 # animation ##################################################
 
-scgf.animation '.cardframe', ->
+if not MOBILE then scgf.animation '.cardframe', ->
 	enter: (dom, done)->
 		dom.find('[title]').popup()
 		card = dom.scope().card
@@ -578,7 +586,8 @@ scgf.animation '.cardframe', ->
 			'padding-right': 0
 		, 300, ->done()
 		return
-.filter 'lookup', ->
+		
+scgf.filter 'lookup', ->
 	(input)->
 		result = window.assets.text input
 		return result if result
