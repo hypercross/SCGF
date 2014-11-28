@@ -3,6 +3,7 @@ start
 
 point .red --pointer ready --target .red
 point .blue --pointer ready --target .red
+resume
 
 point .red --pointer play --target .red>.hand>.Prince
 point .blue --pointer play --target .blue>.hand>.Musician
@@ -18,7 +19,7 @@ resume
 
 point .red --pointer play --target .red>.hand>.Ambassador
 resume
-point .blue --pointer play --target .blue>.hand>.Musician
+point .blue --pointer play --target .blue>.hand>.General
 resume
 
 point .red --pointer play --target .red>.hand>.Princess

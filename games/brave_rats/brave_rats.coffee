@@ -17,10 +17,10 @@ _ = require('lodash')
 # 游戏实体结构 ##############################################
 
 class BottomSlot extends Entity.CardSlot
-    @container @routed.isOwner ->'bottom.'+@name,->'top.'+@name
+    @container @routed.isOwner (->'bottom.'+@name), (->'top.'+@name)
 
 class BackSlot extends Entity.CardSlot
-    @container @routed.isOwner ->'front.'+@name,->'back.'+@name
+    @container @routed.isOwner (->'front.'+@name), (->'back.'+@name)
 
 class BraveRatsPlayer extends Entity.Player
     @markType
@@ -50,7 +50,8 @@ class BraveRatsPlayer extends Entity.Player
         name : '@' + @name
         score : @wins.current
         hand : @hand.deck.length
-    @contained @routed.isSelf ->'bottom.player',->'top.player'
+    @contained @routed.isSelf ->'bottom.player',
+    ->'top.player'
 
 class BraveRatsCard extends Entity.Card
     @markType
@@ -67,11 +68,11 @@ class BraveRatsCard extends Entity.Card
 
 Events = {}
 
-Events.ask = GameEvent.dispatcher 'event.ask',(@player)->,->
+Events.ask = GameEvent.dispatcher 'event.ask',((@player)->), ->
     player = @player
     player.asked 
         play : (choice)->
-            if not choice
+            if not choice.length
                 console.log 'empty choice.'
                 return false
             if choice.length != 1
@@ -84,7 +85,7 @@ Events.ask = GameEvent.dispatcher 'event.ask',(@player)->,->
                 return false
             return true
 
-Events.play = GameEvent.dispatcher 'event.play',(@player)->,->
+Events.play = GameEvent.dispatcher 'event.play',((@player)->),->
     prev = @player.prev.card
     if prev
         prev.moveTo @player.select '.discard'
@@ -105,17 +106,18 @@ Events.win = GameEvent.dispatcher 'event.win',
     (@red,@blue,@redlevel,@bluelevel)->,
     ->if @redlevel > @bluelevel then @round = @red
 
-Events.level = GameEvent.dispatcher 'event.level',(@player)->,->
+Events.level = GameEvent.dispatcher 'event.level',((@player)->),->
     @level = @player.current.card.level
 
-Events.score = GameEvent.dispatcher 'event.score',(@player)->,->
+Events.score = GameEvent.dispatcher 'event.score',((@player)->),->
     @player.wins.current += 1
 
-Events.prePlay = GameEvent.dispatcher 'event.prePlay',(@player)->,->
+Events.prePlay = GameEvent.dispatcher 'event.prePlay',((@player)->),->
 
 # 游戏牌表 ################################################
 
 class Prince extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Prince', 7
         @Listeners.add 'win', new Listener 'event.win', (e)->
@@ -129,6 +131,7 @@ class Prince extends BraveRatsCard
             return e.red.current.card == @
 
 class General extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'General', 6
         @Listeners.add 'level', new Listener 'event.level', (e)->
@@ -138,10 +141,12 @@ class General extends BraveRatsCard
         .only (e)-> e.player.prev.card is @ and e.conducted
 
 class Wizard extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Wizard', 5   
 
 class Ambassador extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Ambassador', 4
         @Listeners.add 'score', new Listener 'event.score', (e)->
@@ -155,6 +160,7 @@ class Ambassador extends BraveRatsCard
             return mine == @ and e.conducted
 
 class Assassin extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Assassin', 3
         @Listeners.add 'win', new Listener 'event.win', (e)->
@@ -169,9 +175,10 @@ class Assassin extends BraveRatsCard
             return e.conducted if (mine == @) or (theirs == @)
             
 class Spy extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Spy', 2
-        @Listeners.add 'beforePlay', new Listener 'event.beforePlay', (e)->
+        @Listeners.add 'prePlay', new Listener 'event.prePlay', (e)->
             if e.conducted 
                 @log 'spy.orange', 
                     player : '@' + e.player.name
@@ -184,6 +191,7 @@ class Spy extends BraveRatsCard
             return e.player.sibling().current.card == @            
 
 class Princess extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Princess', 1
         @Listeners.add 'win', new Listener 'event.win', (e)->
@@ -194,6 +202,7 @@ class Princess extends BraveRatsCard
         .only (e)-> e.red.current.card == @
 
 class Musician extends BraveRatsCard
+    @markType
     @setup ->
         @stat 'Musician', 0
         @Listeners.add 'score', new Listener 'event.score', (e)->
@@ -238,14 +247,14 @@ class Musician extends BraveRatsCard
             2 : blue.wins.current
 
         synced_play = []
-        synced_play.push red if not beforePlay.do red
-        synced_play.push blue if not beforePlay.do blue
+        synced_play.push red if not Events.prePlay(red).prevented
+        synced_play.push blue if not Events.prePlay(blue).prevented
 
-        askEvent.do each for each in synced_play
+        Events.ask each for each in synced_play
 
         red.collectAll(synced_play)
 
-        playEvent.do each for each in synced_play
+        Events.play each for each in synced_play
 
         red.notify()
         blue.notify()
@@ -253,21 +262,21 @@ class Musician extends BraveRatsCard
         round_winner = undefined
         game_winner = undefined
 
-        redlevel = levelEvent.do red
-        bluelevel = levelEvent.do blue
+        redlevel = Events.level(red).level
+        bluelevel = Events.level(blue).level
 
-        winEvent.do red, blue, redlevel, bluelevel
+        winEvent = Events.win red, blue, redlevel, bluelevel
         round_winner = red if winEvent.round
         game_winner = red if winEvent.game
 
-        winEvent.do blue, red, bluelevel, redlevel
+        winEvent = Events.win red, blue, redlevel, bluelevel
         round_winner = blue if winEvent.round
         game_winner = blue if winEvent.game
 
         if round_winner
             red.log 'win_round.purple',
                 player : '@' + round_winner.name
-            countWinEvent.do round_winner
+            Events.score round_winner
             if round_winner.wins.current >= 4
                 game_winner = game_winner or round_winner
 

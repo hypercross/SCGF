@@ -5,6 +5,7 @@ Commands 	= Loader.Commands
 Parse 		= require 'minimist'
 fs			= require 'fs'
 rl 			= require 'readline'
+logger		= require './server/logger'
 
 args = Parse process.argv.slice(2)
 
@@ -22,7 +23,7 @@ if input
 
 fs.exists gameModule, (exists)->
 	if !exists
-		console.log 'hey it\'s not there!'
+		logger.log 'hey it\'s not there!'
 		process.exit()
 
 	module = require gameModule
@@ -36,6 +37,6 @@ fs.exists gameModule, (exists)->
 			Commands.handle(game, args)
 
 	if rd then rd.on 'line', (line)->
-		console.log '>' + line
+		logger.log '>' + line
 		args = Parse line.split(' ')
 		Commands.handle(game, args)
