@@ -205,7 +205,7 @@ body(ng-app="scgf",ng-controller="scgfController")
 			$('.ui.modal#login .button').on 'click',->
 				$('.ui.modal#login').modal('hide')
 
-			$('.ui.fixed.top.menu .right.menu a.item').on 'click',->
+			$('.ui.top.menu .right.menu a.item').on 'click',->
 				$('.ui.modal#login').modal('show')
 				window.session.act 'list'
 

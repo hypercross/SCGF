@@ -139,6 +139,7 @@ if navigator
 	ua = (navigator.userAgent or '').toLowerCase()
 	MOBILE = ua.indexOf('mobile') > -1
 
+# MOBILE = true
 if MOBILE
 	scgf = angular.module 'scgf', []
 else
@@ -487,8 +488,8 @@ eventBus.on 'snapshot', 'containerController', (data)->
 	@scope.asked = []
 	@scope.selected = []
 	@scope.selected_lookup = {}
-	@scope.setLayout data.layout
 	window.assets.onloaded =>
+		@scope.setLayout data.layout
 		for view in data.view
 			@scope.handleGame view
 		@scope.updateFilter()
@@ -517,7 +518,7 @@ eventBus.on 'connected', 'chatController', ->
 
 # animation ##################################################
 
-if not MOBILE then scgf.animation '.cardframe', ->
+card_animator = ->
 	enter: (dom, done)->
 		dom.find('[title]').popup()
 		card = dom.scope().card
@@ -567,7 +568,8 @@ if not MOBILE then scgf.animation '.cardframe', ->
 			width : 0
 			, 300, -> done()
 		return
-.animation '.playbutton', ->
+
+button_animator = ->
 	enter: (dom,done)->
 		dom.popup()
 		dom.css 'overflow-x','hidden'
@@ -586,7 +588,14 @@ if not MOBILE then scgf.animation '.cardframe', ->
 			'padding-right': 0
 		, 300, ->done()
 		return
-		
+
+if not MOBILE 
+	scgf.animation '.cardframe', card_animator
+	scgf.animation '.playbutton', button_animator
+else
+	card_animate = card_animator()
+	button_animate = button_animator()
+
 scgf.filter 'lookup', ->
 	(input)->
 		result = window.assets.text input
