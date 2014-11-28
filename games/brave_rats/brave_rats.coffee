@@ -16,14 +16,21 @@ _ = require('lodash')
 
 # 游戏实体结构 ##############################################
 
+class BottomSlot extends Entity.CardSlot
+    @container @routed.isOwner ->'bottom.'+@name,->'top.'+@name
+
+class BackSlot extends Entity.CardSlot
+    @container @routed.isOwner ->'front.'+@name,->'back.'+@name
+
 class BraveRatsPlayer extends Entity.Player
-    init:->
-        super()
-        @hand 		= @.spawnChild Entity.CardSlot, 'hand'
-        @current    = @.spawnChild Entity.CardSlot, 'current'
-        @prev       = @.spawnChild Entity.CardSlot, 'prev'
-        @discard    = @.spawnChild Entity.CardSlot, 'discard'
-        @wins       = @.spawnChild Entity.Counter, 'wins'
+    @markType
+    @children
+        hand    : BottomSlot
+        current : BackSlot
+        prev    : BackSlot
+        discard : BackSlot
+        wins    : Entity.Counter
+    @setup ->
         @wins.current = 0
 
         @hand.spawnChild Prince
@@ -35,45 +42,35 @@ class BraveRatsPlayer extends Entity.Player
         @hand.spawnChild Princess
         @hand.spawnChild Musician
 
-        @.setComponent new Loader.Component.Viewable (viewpoint)=>
-                asked : if viewpoint == @ then @getAsked() else undefined
-                place : if viewpoint == @ then 'bottom.player' else 'top.player'
-                template : 'player'
-                status : @status
-                name : '@' + @name
-                score : @wins.current
-                hand : @hand.deck.length
-
+    @viewer @routed.isSelf ->
+        asked : @getAsked()
+    @viewer ->
+        template : 'player'
+        status : @status
+        name : '@' + @name
+        score : @wins.current
+        hand : @hand.deck.length
+    @contained @routed.isSelf ->'bottom.player',->'top.player'
 
 class BraveRatsCard extends Entity.Card
-    stat:(@name,@level)->
-    addEffect:->
-    init:->
-        super()
-        @.setComponent new Loader.Component.Viewable (viewpoint)=>
-            side = viewpoint == @.parent().parent()
-            column = @.parent().name
-            row = switch 
-                when side and column != 'hand' then 'back'
-                when not side and column != 'hand' then 'front'
-                when side and column == 'hand' then 'bottom'
-                when not side and column == 'hand' then 'top'
-            return{
-                place : row + '.' + column
-                template : 'card'
-                name : '@card>name>' + @name
-                hint : '@card>desc>' + @name
-                level : @level
-            }
-        @addEffect()
+    @markType
     @type_property 'level'
+    stat:(@name,@level)->
 
+    @viewer ->
+        template : 'card'
+        name : '@card>name>' + @name
+        hint : '@card>desc>' + @name
+        level : @level
+    
 # 游戏事件 ################################################
 
-askEvent = new GameEvent 'event.ask', ->
+Events = {}
+
+Events.ask = GameEvent.dispatcher 'event.ask',(@player)->,->
     player = @player
-    player.asked
-        play : (choice)=>
+    player.asked 
+        play : (choice)->
             if not choice
                 console.log 'empty choice.'
                 return false
@@ -86,10 +83,8 @@ askEvent = new GameEvent 'event.ask', ->
                 console.log 'hand is ' + player.hand.selector()
                 return false
             return true
-askEvent.do = (@player)->@post(@player)
 
-
-playEvent = new GameEvent 'event.play', ->
+Events.play = GameEvent.dispatcher 'event.play',(@player)->,->
     prev = @player.prev.card
     if prev
         prev.moveTo @player.select '.discard'
@@ -105,34 +100,23 @@ playEvent = new GameEvent 'event.play', ->
             card : '@card>name>' + play.name
         play.moveTo @player.current
         play.notify()
-playEvent.do = (@player)->@post(@player)
 
-winEvent = new GameEvent 'event.win', ->
-    if @redlevel > @bluelevel then @round = @red
-winEvent.do = (@red,@blue,@redlevel,@bluelevel)->
-    @round = @game = false
-    @post(@red)
+Events.win = GameEvent.dispatcher 'event.win',
+    (@red,@blue,@redlevel,@bluelevel)->,
+    ->if @redlevel > @bluelevel then @round = @red
 
-levelEvent = new GameEvent 'event.level', ->
+Events.level = GameEvent.dispatcher 'event.level',(@player)->,->
     @level = @player.current.card.level
-levelEvent.do = (@player)->
-    @post(@player)
-    return @level
 
-countWinEvent = new GameEvent 'event.countWin', ->
+Events.score = GameEvent.dispatcher 'event.score',(@player)->,->
     @player.wins.current += 1
-countWinEvent.do = (@player)->@post(@player)
 
-beforePlay = new GameEvent 'event.beforePlay',->
-beforePlay.do = (@player)->
-    @prevented = false
-    @post(@player)
-    return @prevented
+Events.prePlay = GameEvent.dispatcher 'event.prePlay',(@player)->,->
 
 # 游戏牌表 ################################################
 
 class Prince extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Prince', 7
         @Listeners.add 'win', new Listener 'event.win', (e)->
             @log 'prince.orange',
@@ -145,65 +129,62 @@ class Prince extends BraveRatsCard
             return e.red.current.card == @
 
 class General extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'General', 6
         @Listeners.add 'level', new Listener 'event.level', (e)->
-            if e.conducted
-                @log 'general.orange',
-                    card : '@card>name>' + e.player.current.card.name
-                e.level += 2
-        .only (e)-> e.player.prev.card == @
+            @log 'general.orange',
+                card : '@card>name>' + e.player.current.card.name
+            e.level += 2
+        .only (e)-> e.player.prev.card is @ and e.conducted
 
 class Wizard extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Wizard', 5   
 
 class Ambassador extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Ambassador', 4
-        @Listeners.add 'countWin', new Listener 'event.countWin', (e)->
-            if e.conducted
-                @log 'ambassador.orange',
-                    player : '@' + e.player.name
-                e.player.wins.current += 1
+        @Listeners.add 'score', new Listener 'event.score', (e)->
+            @log 'ambassador.orange',
+                player : '@' + e.player.name
+            e.player.wins.current += 1
         .only (e)-> 
             mine = e.player.current.card
             theirs = e.player.sibling().current.card
             return false if theirs instanceof Wizard
-            return mine == @
+            return mine == @ and e.conducted
 
 class Assassin extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Assassin', 3
         @Listeners.add 'win', new Listener 'event.win', (e)->
-            if e.conducted
-                if e.red.current.card == @
-                    @log 'assassin.orange',{}
-                e.round = e.redlevel < e.bluelevel
+            if e.red.current.card == @
+                @log 'assassin.orange',{}
+            e.round = e.redlevel < e.bluelevel
         .only (e)->
             mine = e.red.current.card
             theirs = e.blue.current.card
             return false if mine instanceof Wizard or theirs instanceof Wizard
             return false if mine instanceof Prince or theirs instanceof Prince
-            return true if (mine == @) or (theirs == @)
+            return e.conducted if (mine == @) or (theirs == @)
             
 class Spy extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Spy', 2
         @Listeners.add 'beforePlay', new Listener 'event.beforePlay', (e)->
             if e.conducted 
                 @log 'spy.orange', 
                     player : '@' + e.player.name
-                askEvent.do e.player
+                Events.ask e.player
                 e.player.collect e.player
-                playEvent.do e.player
+                Events.play e.player
                 e.prevented = true
         .only (e)-> 
             return false if e.player.current.card instanceof Spy
             return e.player.sibling().current.card == @            
 
 class Princess extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Princess', 1
         @Listeners.add 'win', new Listener 'event.win', (e)->
             if e.blue.current.card instanceof Prince
@@ -213,9 +194,9 @@ class Princess extends BraveRatsCard
         .only (e)-> e.red.current.card == @
 
 class Musician extends BraveRatsCard
-    addEffect:->
+    @setup ->
         @stat 'Musician', 0
-        @Listeners.add 'countWin', new Listener 'event.countWin', (e)->
+        @Listeners.add 'score', new Listener 'event.score', (e)->
             e.cancelled = true
             @log 'musician.orange', {}
         .only (e)-> 
