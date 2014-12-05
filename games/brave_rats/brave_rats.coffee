@@ -85,22 +85,19 @@ Events.ask = GameEvent.dispatcher 'event.ask',((@player)->), ->
                 return false
             return true
 
+moveCard = (card,to)->
+    card.moveTo to
+    card.notify()
+
 Events.play = GameEvent.dispatcher 'event.play',((@player)->),->
-    prev = @player.prev.card
-    if prev
-        prev.moveTo @player.select '.discard'
-        prev.notify()
-    current = @player.current.card
-    if current
-        current.moveTo @player.prev
-        current.notify()
+    moveCard @player.prev.card, @player.discard if @player.prev.card
+    moveCard @player.current.card, @player.prev if @player.current.card
     play = @player.targets.play[0]
     if play
         play.log 'played.teal', 
             player : '@' + @player.name,
             card : '@card>name>' + play.name
-        play.moveTo @player.current
-        play.notify()
+        moveCard play, player.current
 
 Events.win = GameEvent.dispatcher 'event.win',
     (@red,@blue,@redlevel,@bluelevel)->,

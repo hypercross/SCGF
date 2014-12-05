@@ -17,74 +17,62 @@ renderCardDesc = (s)->
 	return '@card>desc>'+s	
 
 # 游戏实体结构 ##############################################
+class UnoHand extends Entity.CardSlot
+	@covered()
+	@container @routed.isOwner (->'bottom.hand')
+
 class UnoPlayer extends Entity.Player
-	init:->
-		super()
-		@hand 		= @.spawnChild Entity.CardSlot, 'hand'
-		@.setComponent new Loader.Component.Viewable (viewpoint)=>
-			asked : if viewpoint == @ then @getAsked() else undefined
-			place : if viewpoint == @ then 'bottom.player' else 'top.player'
-			template : 'player'
-			status : @status
-			name : '@' + @name
-			hand : @hand.deck.length
+	@markType()
+	@children
+		hand : Entity.Cardslot
+
+	@viewer
+		template : 'player'
+		status : @status
+		name : '@' + @name
+		hand : @hand.deck.length
+	@viewer @routed.isSelf, ->
+		asked : @getAsked()
+	@contained @routed.isSelf, (->'bottom.player'),(->'top.player')
 
 	hasColor:(color)->
 		_.find @hand.deck, (one)->one.color == color
 
 class UnoCard extends Entity.Card
-	stat:(@name,@color)->
-	init:->
-		super()
-		@.setComponent new Loader.Component.Viewable (viewpoint)=>
-
-			render_front = =>
-				template : 'front_card'
-				name : @name
-				color : @color
-				hint : renderCardDesc @name
-
-			render_back = ->
-				template : 'cover_card'
-
-			rendered = null
-			if @parent() isnt viewpoint.hand
-				if @parent().name isnt 'discarded'
-					rendered = render_back()
-				else 
-					rendered = render_front()
-				rendered.place = '#' + @parent().parent().id
-			else
-				rendered = render_front()
-				rendered.place = 'bottom.hand'
-			return rendered
-
+	@markType
 	@type_property 'color'
+	stat:(@name,@color)->
 
-class UnoDeck extends Entity.CardSlot
-	init:->
-		super()
+	@viewer @routed.isCovered ->
+		template : 'front_card'
+		name : @name
+		color : @color
+		hint : renderCardDesc @name
+	, ->{template : 'cover_card'}
+	
 
-		@draw = @spawnChild Entity.CardSlot, 'draw'
-		@discarded = @spawnChild Entity.CardSlot, 'discarded'
-
+class UnoDeck extends Entity.Base
+	@markType
+	@children
+		draw : Entity.CardSlot
+		discarded : Entity.CardSlot
+	@setup ->
+		addCard = (s,c)->@draw.spawnChild(UnoCard).stat(s,c)
 		for color in ['red','blue','green','yellow']
-			@draw.spawnChild(UnoCard).stat 0, color
 			for rank in [1..9]
-				@draw.spawnChild(UnoCard).stat(rank, color) for i in [1..2]
-			@draw.spawnChild(UnoCard).stat('Skip', color) for i in [1..2]
-			@draw.spawnChild(UnoCard).stat('DrawTwo', color) for i in [1..2]
-			@draw.spawnChild(UnoCard).stat('Reverse', color) for i in [1..2]
-		@draw.spawnChild(UnoCard).stat('Wild', 'wild') for i in [1..4]
-		@draw.spawnChild(UnoCard).stat('WildFour', 'wild') for i in [1..4]
+				addCard rank, color for [1..2]
+			for special in ['Skip','DrawTwo','Reverse',0]
+				addCard special,color
+		addCard 'Wild', 'wild' for [1..4]
+		addCard 'WildFour', 'wild' for [1..4]
 		@draw.shuffle()
-		@.setComponent new Loader.Component.Viewable (viewpoint)=>
-			place: 'front.draw'
-			template : 'deck'
-			draw : @draw.deck.length
-			discard : @discarded.deck.length
-			color : (@game().uno_state or {color:'wild'}).color
-			symbol : @getViewedSymbol()
+	@viewer ->
+		place: 'front.draw'
+		template : 'deck'
+		draw : @draw.deck.length
+		discard : @discarded.deck.length
+		color : (@game().uno_state or {color:'wild'}).color
+		symbol : @getViewedSymbol()
 	getViewedSymbol:->
 		(@game().uno_state or {name:'Wild'}).name
 	drawTo:(player,count)->
