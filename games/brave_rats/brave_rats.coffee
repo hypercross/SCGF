@@ -20,7 +20,7 @@ class BottomSlot extends Entity.CardSlot
     @container @routed.isOwner (->'bottom.'+@name), (->'top.'+@name)
 
 class BackSlot extends Entity.CardSlot
-    @container @routed.isOwner (->'front.'+@name), (->'back.'+@name)
+    @container @routed.isOwner (->'back.'+@name), (->'front.'+@name)
 
 class BraveRatsPlayer extends Entity.Player
     @markType
@@ -124,7 +124,7 @@ class Prince extends BraveRatsCard
         .only (e)-> 
             return false if e.blue.current.card instanceof Wizard
             return false if e.blue.current.card instanceof Prince
-            return e.red.current.card == @
+            return e.red.current.card is @
 
 class General extends BraveRatsCard
     @markType
@@ -153,7 +153,7 @@ class Ambassador extends BraveRatsCard
             mine = e.player.current.card
             theirs = e.player.sibling().current.card
             return false if theirs instanceof Wizard
-            return mine == @ and e.conducted
+            return mine is @ and e.conducted
 
 class Assassin extends BraveRatsCard
     @markType
@@ -175,27 +175,27 @@ class Spy extends BraveRatsCard
     @setup ->
         @stat 'Spy', 2
         @Listeners.add 'prePlay', new Listener 'event.prePlay', (e)->
-            if e.conducted 
-                @log 'spy.orange', 
-                    player : '@' + e.player.name
-                Events.ask e.player
-                e.player.collect e.player
-                Events.play e.player
-                e.prevented = true
+            @log 'spy.orange', 
+                player : '@' + e.player.name
+            Events.ask e.player
+            e.player.collect()
+            Events.play e.player
+            e.prevented = true
         .only (e)-> 
             return false if e.player.current.card instanceof Spy
-            return e.player.sibling().current.card == @            
+            return e.player.sibling().current.card is @ and e.conducted
 
 class Princess extends BraveRatsCard
     @markType
     @setup ->
         @stat 'Princess', 1
         @Listeners.add 'win', new Listener 'event.win', (e)->
-            if e.blue.current.card instanceof Prince
-                @log 'princess.orange', {}
-                e.cancelled = true
-                e.game = true
-        .only (e)-> e.red.current.card == @
+            @log 'princess.orange', {}
+            e.cancelled = true
+            e.game = true
+        .only (e)-> 
+            return false if e.red.current.card isnt @
+            return e.blue.current.card instanceof Prince
 
 class Musician extends BraveRatsCard
     @markType
@@ -210,7 +210,6 @@ class Musician extends BraveRatsCard
             return false if mine instanceof Wizard or theirs instanceof Wizard
             return true if (mine == @) or (theirs == @)
             
-
 # 模组接口 ################################################
 
 @config = ->
@@ -242,15 +241,17 @@ class Musician extends BraveRatsCard
             1 : red.wins.current,
             2 : blue.wins.current
 
-        synced_play = []
-        synced_play.push red if not Events.prePlay(red).prevented
-        synced_play.push blue if not Events.prePlay(blue).prevented
+        skipred = Events.prePlay(red).prevented
+        skipblue = Events.prePlay(blue).prevented
 
-        Events.ask each for each in synced_play
+        Events.ask red if not skipred
+        Events.ask blue if not skipblue
 
-        red.collectAll(synced_play)
+        red.collect() if not skipred
+        blue.collect() if not skipblue
 
-        Events.play each for each in synced_play
+        Events.play red if not skipred 
+        Events.play blue if not skipblue
 
         red.notify()
         blue.notify()
@@ -265,7 +266,7 @@ class Musician extends BraveRatsCard
         round_winner = red if winEvent.round
         game_winner = red if winEvent.game
 
-        winEvent = Events.win red, blue, redlevel, bluelevel
+        winEvent = Events.win blue, red, bluelevel, redlevel
         round_winner = blue if winEvent.round
         game_winner = blue if winEvent.game
 
