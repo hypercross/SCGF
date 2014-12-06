@@ -50,8 +50,7 @@ class BraveRatsPlayer extends Entity.Player
         name : '@' + @name
         score : @wins.current
         hand : @hand.deck.length
-    @contained @routed.isSelf ->'bottom.player',
-    ->'top.player'
+    @contained @routed.isSelf (->'bottom.player'),(->'top.player')
 
 class BraveRatsCard extends Entity.Card
     @markType
@@ -97,7 +96,7 @@ Events.play = GameEvent.dispatcher 'event.play',((@player)->),->
         play.log 'played.teal', 
             player : '@' + @player.name,
             card : '@card>name>' + play.name
-        moveCard play, player.current
+        moveCard play, @player.current
 
 Events.win = GameEvent.dispatcher 'event.win',
     (@red,@blue,@redlevel,@bluelevel)->,
